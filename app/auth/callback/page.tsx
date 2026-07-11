@@ -8,9 +8,11 @@ export default function AuthCallback() {
   const router = useRouter();
 
   useEffect(() => {
-    // detectSessionInUrl exchanges the ?code= automatically; listen for the result
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      router.replace(session ? '/' : '/login');
+    // Wait specifically for SIGNED_IN — onAuthStateChange fires INITIAL_SESSION
+    // immediately (null) before PKCE exchange completes, so we must not redirect on null.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) router.replace('/');
+      if (event === 'SIGNED_OUT') router.replace('/login');
     });
 
     // In case the exchange already completed before the listener attached
