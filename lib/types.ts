@@ -1,0 +1,21 @@
+export type Pet = { id: string; name: string; breed: string | null; age_years: number | null; aggressive: boolean; rescue: boolean; critical_notes: string | null };
+export type Address = { id: string; label: string; address_text: string; lat: number | null; lng: number | null };
+export type Therapy = { id: string; sort_order: number; name: string; branded_name: string; description: string | null; target_symptoms: string | null; price: number; duration_min: number; image_url: string | null; active: boolean };
+export type OrderStatus = 'unassigned' | 'assigned' | 'on_the_way' | 'in_progress' | 'delivered' | 'cancelled';
+export type Staff = { id: string; auth_user_id: string | null; name: string; email: string | null; phone_number: string | null; role: 'admin' | 'supplier'; vehicle_type: string | null; active: boolean };
+export const STATUS_META: Record<string, { label: string; cls: string }> = {
+  unassigned:  { label: 'Finding partner', cls: 'bg-amber-100 text-amber-800' },
+  assigned:    { label: 'Confirmed',       cls: 'bg-pink-100 text-magenta' },
+  on_the_way:  { label: 'On the way',      cls: 'bg-blue-100 text-blue-800' },
+  in_progress: { label: 'In progress',     cls: 'bg-orange-100 text-orange-800' },
+  delivered:   { label: 'Completed',       cls: 'bg-green-100 text-green-800' },
+  cancelled:   { label: 'Cancelled',       cls: 'bg-red-100 text-red-700' },
+};
+export const NEXT_STATUS: Partial<Record<OrderStatus, { next: OrderStatus; label: string }>> = {
+  assigned:    { next: 'on_the_way',  label: 'Start Trip 🚀' },
+  on_the_way:  { next: 'in_progress', label: 'Arrived — Start Job' },
+  in_progress: { next: 'delivered',   label: 'Mark Completed ✓' },
+};
+export const mapsLink = (lat: number, lng: number) => `https://www.google.com/maps?q=${lat},${lng}`;
+export const computeFare = (cfg: any, km: number) =>
+  Math.max(Number(cfg?.min_fare ?? 400), Math.round(Number(cfg?.base_fare ?? 300) + Number(cfg?.per_km ?? 30) * km));

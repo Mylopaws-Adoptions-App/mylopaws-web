@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background:
+    radial-gradient(1200px 500px at 85% -10%, rgba(239,202,88,0.14), transparent 60%),
+    radial-gradient(900px 420px at -10% 30%, rgba(105,26,71,0.06), transparent 55%),
+    #FBF7F2;
+}
+/* Google Places dropdown polish */
+.pac-container { border-radius: 14px; border: 1px solid #EEE5DC; box-shadow: 0 10px 30px rgba(43,34,51,.12); font-family: var(--font-body), sans-serif; }
+.pac-item { padding: 10px 12px; cursor: pointer; }
+.pac-item:hover { background: #FBF7F2; }
+:root { --font-display: 'Fraunces'; --font-body: 'Work Sans'; }
