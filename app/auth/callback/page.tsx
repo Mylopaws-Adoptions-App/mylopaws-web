@@ -10,9 +10,12 @@ export default function AuthCallback() {
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get('code');
     if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
-        if (error) console.error('Auth exchange error:', error.message);
-        router.replace(data.session ? '/' : '/login');
+      // Sign out first to clear any corrupted prior session before exchanging
+      supabase.auth.signOut().finally(() => {
+        supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+          if (error) console.error('Auth exchange error:', error.message);
+          router.replace(data.session ? '/' : '/login');
+        });
       });
     } else {
       supabase.auth.getSession().then(({ data }) => {
