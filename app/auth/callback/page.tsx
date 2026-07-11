@@ -8,19 +8,17 @@ export default function AuthCallback() {
   const router = useRouter();
 
   useEffect(() => {
-    // Wait specifically for SIGNED_IN — onAuthStateChange fires INITIAL_SESSION
-    // immediately (null) before PKCE exchange completes, so we must not redirect on null.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) router.replace('/');
-      if (event === 'SIGNED_OUT') router.replace('/login');
-    });
-
-    // In case the exchange already completed before the listener attached
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) router.replace('/');
-    });
-
-    return () => subscription.unsubscribe();
+    const code = new URLSearchParams(window.location.search).get('code');
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+        if (error) console.error('Auth exchange error:', error.message);
+        router.replace(data.session ? '/' : '/login');
+      });
+    } else {
+      supabase.auth.getSession().then(({ data }) => {
+        router.replace(data.session ? '/' : '/login');
+      });
+    }
   }, [router]);
 
   return <Spinner label="Signing you in…" />;
