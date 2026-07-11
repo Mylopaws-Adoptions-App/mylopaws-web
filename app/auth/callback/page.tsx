@@ -8,20 +8,22 @@ export default function AuthCallback() {
   const router = useRouter();
 
   useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get('code');
-    if (code) {
-      // Sign out first to clear any corrupted prior session before exchanging
-      supabase.auth.signOut().finally(() => {
-        supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
-          if (error) console.error('Auth exchange error:', error.message);
-          router.replace(data.session ? '/' : '/login');
-        });
-      });
-    } else {
-      supabase.auth.getSession().then(({ data }) => {
-        router.replace(data.session ? '/' : '/login');
-      });
-    }
+    let done = false;
+    const finish = (path: string) => { if (!done) { done = true; router.replace(path); } };
+
+    // detectSessionInUrl handles both implicit (#access_token) and PKCE (?code=)
+    // flows automatically. We just wait for the resulting session — do NOT call
+    // signOut() or exchangeCodeForSession() here (that would wipe the PKCE verifier
+    // or double-exchange the code).
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (session) finish('/');
+    });
+    supabase.auth.getSession().then(({ data }) => { if (data.session) finish('/'); });
+
+    // If the exchange fails or no session materialises, fall back to login.
+    const t = setTimeout(() => finish('/login'), 5000);
+
+    return () => { subscription.unsubscribe(); clearTimeout(t); };
   }, [router]);
 
   return <Spinner label="Signing you in…" />;
