@@ -17,7 +17,7 @@ export default function Login() {
     setBusy(true); setErr(null);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined },
+      options: { redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined },
     });
     if (error) { setErr(error.message); setBusy(false); }
   };
