@@ -54,6 +54,7 @@ export default function OpsLayout({ children }: { children: React.ReactNode }) {
     { href: '/ops/board/travel', label: '🚗 Travel' },
     { href: '/ops/board/dermacare', label: '✨ Dermacare' },
     ...(isAdmin ? [
+      { href: '/ops/homes', label: '🐱 Homes' },
       { href: '/ops/assistant', label: '🎙 Assistant' },
       { href: '/ops/team', label: '👷 Team' },
       { href: '/ops/composer', label: '📣 Push' },
