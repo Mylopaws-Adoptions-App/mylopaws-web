@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Spinner } from '@/components/ui';
+import { LoadingState } from '@/components/design';
 
 export default function AuthCallback() {
   const router = useRouter();
@@ -26,5 +26,5 @@ export default function AuthCallback() {
     return () => { subscription.unsubscribe(); clearTimeout(t); };
   }, [router]);
 
-  return <Spinner label="Signing you in…" />;
+  return <div className="mx-auto flex min-h-screen max-w-[480px] items-center justify-center bg-white"><LoadingState label="Signing you in…" /></div>;
 }

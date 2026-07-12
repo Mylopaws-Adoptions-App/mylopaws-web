@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { Spinner } from './ui';
+import { LoadingState } from './design';
 
 const Ctx = createContext<{ session: Session | null }>({ session: null });
 export const useSession = () => useContext(Ctx);
@@ -30,7 +30,7 @@ export default function AuthGate({ children, redirect = '/login' }: { children: 
     }
   }, [ready, session, redirect, router]);
 
-  if (!ready) return <Spinner label="Waking up Mylopaws…" />;
+  if (!ready) return <div className="mx-auto flex min-h-screen max-w-[480px] items-center justify-center bg-white"><LoadingState label="Waking up Mylopaws…" /></div>;
   if (!session) return null;
   return <Ctx.Provider value={{ session }}>{children}</Ctx.Provider>;
 }

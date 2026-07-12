@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { Staff } from '@/lib/types';
-import { Spinner, Btn } from '@/components/ui';
+import { LoadingState, PillButton } from '@/components/design';
 import { OpsCtx } from '@/components/OpsContext';
 
 export default function OpsLayout({ children }: { children: React.ReactNode }) {
@@ -34,15 +34,17 @@ export default function OpsLayout({ children }: { children: React.ReactNode }) {
   }, [ready, session, isLogin, router]);
 
   if (isLogin) return <>{children}</>;
-  if (!ready || (session && me === null)) return <Spinner label="Signing you in…" />;
+  if (!ready || (session && me === null)) return <div className="mx-auto flex min-h-screen max-w-[480px] items-center justify-center bg-white"><LoadingState label="Signing you in…" /></div>;
   if (!session) return null;
   if (me === 'missing') {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
+      <main className="mx-auto flex min-h-screen max-w-[480px] flex-col items-center justify-center bg-white px-6 text-center">
         <div className="text-5xl">🔒</div>
-        <h1 className="mt-3 font-display text-2xl font-black">Not registered as staff</h1>
-        <p className="mt-2 max-w-sm text-sm text-ink-soft">This account isn't registered as Mylopaws staff, or has been deactivated. Ask an admin to add you.</p>
-        <Btn kind="ghost" className="mt-5" onClick={() => supabase.auth.signOut().then(() => location.assign('/ops/login'))}>Log out</Btn>
+        <h1 className="mt-3 text-[22px] font-bold text-ink">Not registered as staff</h1>
+        <p className="mt-2 max-w-sm text-[14px] leading-[1.5] text-muted">This account isn&apos;t registered as Mylopaws staff, or has been deactivated. Ask an admin to add you.</p>
+        <div className="mt-6 w-full max-w-[240px]">
+          <PillButton variant="secondary" onClick={() => supabase.auth.signOut().then(() => location.assign('/ops/login'))}>Log out</PillButton>
+        </div>
       </main>
     );
   }
@@ -59,19 +61,19 @@ export default function OpsLayout({ children }: { children: React.ReactNode }) {
   ];
   return (
     <OpsCtx.Provider value={{ session, me: staff }}>
-      <header className="sticky top-0 z-40 border-b border-line bg-night text-white">
-        <div className="mx-auto flex max-w-5xl items-center gap-4 overflow-x-auto px-5 py-3">
-          <span className="shrink-0 font-display text-lg font-black">Mylopaws Ops</span>
+      <header className="sticky top-0 z-40 bg-plum text-white">
+        <div className="mx-auto flex max-w-2xl items-center gap-4 overflow-x-auto px-5 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <span className="shrink-0 text-[17px] font-bold">Mylopaws Ops</span>
           <nav className="flex gap-4">
             {tabs.map(t => (
               <Link key={t.href} href={t.href}
-                className={`whitespace-nowrap text-sm font-bold ${path.startsWith(t.href) ? 'text-brass' : 'text-white/70 hover:text-white'}`}>
+                className={`whitespace-nowrap text-[14px] font-semibold ${path.startsWith(t.href) ? 'text-butter' : 'text-white/70 hover:text-white'}`}>
                 {t.label}
               </Link>
             ))}
           </nav>
           <button onClick={() => supabase.auth.signOut().then(() => location.assign('/ops/login'))}
-            className="ml-auto shrink-0 text-sm font-bold text-white/70 hover:text-white">Log out</button>
+            className="ml-auto shrink-0 text-[14px] font-semibold text-white/70 hover:text-white">Log out</button>
         </div>
       </header>
       {children}

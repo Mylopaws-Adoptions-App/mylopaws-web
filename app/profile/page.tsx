@@ -3,10 +3,10 @@ import { useEffect, useState } from 'react';
 import AuthGate, { useSession } from '@/components/AuthGate';
 import Nav from '@/components/Nav';
 import { supabase } from '@/lib/supabase';
-import { Btn, Card, Field, Chip } from '@/components/ui';
 import { Pet, Address } from '@/lib/types';
 import PetPicker from '@/components/PetPicker';
 import PlaceInput, { PickedPlace } from '@/components/PlaceInput';
+import { PageShell, PillButton, Field } from '@/components/design';
 
 function Profile() {
   const { session } = useSession();
@@ -40,59 +40,80 @@ function Profile() {
     setPicked(null); setLabel('Home'); loadAll();
   };
 
+  const Group = ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <section className="mt-7">
+      <h2 className="mb-3 text-[17px] font-bold text-ink">{title}</h2>
+      {children}
+    </section>
+  );
+
   return (
-    <main className="mx-auto max-w-2xl px-5 py-8">
-      <h1 className="font-display text-3xl font-black">Profile</h1>
-      <Card className="mt-5">
+    <PageShell variant="plum" size="large" title="Profile" sheetClassName="pb-28">
+      <Group title="Your details">
         <Field label="Name" value={f.name} onChange={e => setF(s => ({ ...s, name: e.target.value }))} />
-        <Field label="Phone (WhatsApp)" value={f.phone_number} onChange={e => setF(s => ({ ...s, phone_number: e.target.value }))} placeholder="+91…" />
+        <Field label="Phone (WhatsApp)" value={f.phone_number} onChange={e => setF(s => ({ ...s, phone_number: e.target.value }))} placeholder="+91…" inputMode="tel" />
         <Field label="Email" value={f.email} onChange={e => setF(s => ({ ...s, email: e.target.value }))} />
         <Field label="City" value={f.city} onChange={e => setF(s => ({ ...s, city: e.target.value }))} />
-        <Btn onClick={save} loading={saving}>Save changes</Btn>
-        {msg && <span className="ml-3 text-sm font-semibold text-green-700">{msg}</span>}
-      </Card>
+        <div className="flex items-center gap-3">
+          <div className="w-40"><PillButton onClick={save} loading={saving}>Save changes</PillButton></div>
+          {msg && <span className="text-[13px] font-semibold text-success">{msg}</span>}
+        </div>
+      </Group>
 
-      <Card className="mt-4">
-        <p className="mb-2 font-bold text-magenta">My furbabies 🐾</p>
-        {pets.map(p => (
-          <div key={p.id} className="mb-2 flex items-center justify-between rounded-xl bg-cream p-3">
-            <div>
-              <p className="font-bold">{p.name} {p.rescue ? '🏳️' : ''}</p>
-              <p className="text-xs text-ink-soft">{[p.breed, p.age_years ? `${p.age_years} yrs` : null, p.aggressive ? '⚠️ can be aggressive' : null].filter(Boolean).join(' · ') || '—'}</p>
+      <Group title="My furbabies 🐾">
+        <div className="space-y-2">
+          {pets.map(p => (
+            <div key={p.id} className="flex items-center justify-between rounded-card bg-surface-alt p-3">
+              <div className="min-w-0">
+                <p className="font-bold text-ink">{p.name} {p.rescue ? '🏳️' : ''}</p>
+                <p className="text-[12px] text-muted">{[p.breed, p.age_years ? `${p.age_years} yrs` : null, p.aggressive ? '⚠️ can be aggressive' : null].filter(Boolean).join(' · ') || '—'}</p>
+              </div>
+              <button onClick={async () => { await supabase.from('pets').delete().eq('id', p.id); loadAll(); }}
+                className="min-h-[44px] shrink-0 rounded-full px-3 text-[13px] font-bold text-danger">Remove</button>
             </div>
-            <button onClick={async () => { await supabase.from('pets').delete().eq('id', p.id); loadAll(); }}
-              className="min-h-[40px] rounded-full px-3 text-sm font-bold text-red-600 hover:bg-red-50">Remove</button>
-          </div>
-        ))}
-        <PetPicker pets={[]} selected={null} onSelect={() => {}} onPetAdded={loadAll} userId={session!.user.id} />
-      </Card>
+          ))}
+        </div>
+        <div className="mt-3"><PetPicker pets={[]} selected={null} onSelect={() => {}} onPetAdded={loadAll} userId={session!.user.id} /></div>
+      </Group>
 
-      <Card className="mt-4">
-        <p className="mb-2 font-bold text-magenta">Saved addresses 📍</p>
-        {addresses.map(a => (
-          <div key={a.id} className="mb-2 flex items-center justify-between rounded-xl bg-cream p-3">
-            <div className="min-w-0"><p className="font-bold">{a.label}</p><p className="truncate text-xs text-ink-soft">{a.address_text}</p></div>
-            <button onClick={async () => { await supabase.from('addresses').delete().eq('id', a.id); loadAll(); }}
-              className="min-h-[40px] shrink-0 rounded-full px-3 text-sm font-bold text-red-600 hover:bg-red-50">Delete</button>
-          </div>
-        ))}
-        <Field label="Label" value={label} onChange={e => setLabel(e.target.value)} placeholder="Home / Office" />
+      <Group title="Saved addresses 📍">
+        <div className="space-y-2">
+          {addresses.map(a => (
+            <div key={a.id} className="flex items-center justify-between rounded-card bg-surface-alt p-3">
+              <div className="min-w-0"><p className="font-bold text-ink">{a.label}</p><p className="truncate text-[12px] text-muted">{a.address_text}</p></div>
+              <button onClick={async () => { await supabase.from('addresses').delete().eq('id', a.id); loadAll(); }}
+                className="min-h-[44px] shrink-0 rounded-full px-3 text-[13px] font-bold text-danger">Delete</button>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3"><Field label="Label" value={label} onChange={e => setLabel(e.target.value)} placeholder="Home / Office" /></div>
         <PlaceInput label="Address" placeholder="Search address…" onPicked={setPicked} />
-        {picked && <p className="mb-2 text-sm font-semibold text-green-700">✓ {picked.address}</p>}
-        <Btn kind="ghost" onClick={addAddress} disabled={!picked}>Save address</Btn>
-      </Card>
+        {picked && <p className="mb-2 text-[13px] font-semibold text-success">✓ {picked.address}</p>}
+        <PillButton variant="secondary" onClick={addAddress} disabled={!picked}>Save address</PillButton>
+      </Group>
 
-      <Card className="mt-4">
-        <p className="mb-2 font-bold text-magenta">Payment history</p>
-        {payments.length === 0 ? <p className="text-sm text-ink-soft">No payments yet.</p> : payments.map(p => (
-          <div key={p.id} className="flex justify-between border-b border-line py-2 text-sm last:border-0">
-            <span className="font-semibold">₹{p.amount} · {p.order_type} #{p.order_id}</span>
-            <span className={`font-black text-xs ${p.status === 'paid' ? 'text-green-700' : p.status === 'failed' ? 'text-red-600' : 'text-ink-soft'}`}>{p.status.toUpperCase()}</span>
+      <Group title="Payment history">
+        {payments.length === 0 ? <p className="text-[14px] text-muted">No payments yet.</p> : (
+          <div className="rounded-card border border-line bg-white shadow-card">
+            {payments.map(p => (
+              <div key={p.id} className="flex justify-between border-b border-line px-4 py-3 text-[14px] last:border-0">
+                <span className="font-semibold text-ink">₹{p.amount} · {p.order_type} #{p.order_id}</span>
+                <span className={`text-[12px] font-bold ${p.status === 'paid' ? 'text-success' : p.status === 'failed' ? 'text-danger' : 'text-muted'}`}>{p.status.toUpperCase()}</span>
+              </div>
+            ))}
           </div>
-        ))}
-      </Card>
-      <p className="mt-6 mb-8 text-center text-xs text-ink-soft">Mylopaws · Bengaluru 🐾</p>
-    </main>
+        )}
+      </Group>
+
+      <button onClick={() => supabase.auth.signOut().then(() => location.assign('/login'))}
+        className="mt-8 flex min-h-[52px] w-full items-center justify-center rounded-btn border-[1.5px] border-danger text-[15px] font-bold text-danger">
+        Log out
+      </button>
+      <p className="mt-6 text-center text-[12px] text-muted">Mylopaws · Bengaluru 🐾</p>
+
+      <Nav />
+    </PageShell>
   );
 }
-export default function Page() { return <AuthGate><><Nav /><Profile /></></AuthGate>; }
+
+export default function Page() { return <AuthGate><Profile /></AuthGate>; }

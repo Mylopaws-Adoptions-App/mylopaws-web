@@ -5,8 +5,10 @@ import { loadMaps } from '@/lib/maps';
 export type PickedPlace = { address: string; lat: number; lng: number };
 
 // Google Places Autocomplete widget bound to a plain input — SDK handles CORS/session tokens.
-export default function PlaceInput({ label, placeholder, onPicked, defaultValue }: {
-  label: string; placeholder: string; onPicked: (p: PickedPlace) => void; defaultValue?: string;
+// `bare` renders just the styled input (no label/border) for use inside custom cards/sheets.
+export default function PlaceInput({ label, placeholder, onPicked, defaultValue, bare, autoFocus }: {
+  label?: string; placeholder: string; onPicked: (p: PickedPlace) => void; defaultValue?: string;
+  bare?: boolean; autoFocus?: boolean;
 }) {
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -25,11 +27,19 @@ export default function PlaceInput({ label, placeholder, onPicked, defaultValue 
       });
     });
   }, [onPicked]);
+
+  if (bare) {
+    return (
+      <input ref={ref} defaultValue={defaultValue} placeholder={placeholder} autoFocus={autoFocus}
+        className="min-h-[52px] w-full rounded-input border border-line bg-surface-alt px-4 text-[15px] text-ink outline-none placeholder:text-muted focus:border-plum" />
+    );
+  }
+
   return (
     <label className="mb-4 block">
-      <span className="mb-1 block text-[13px] font-semibold text-ink-soft">{label}</span>
+      {label && <span className="mb-1 block text-[13px] font-medium text-muted">{label}</span>}
       <input ref={ref} defaultValue={defaultValue} placeholder={placeholder}
-        className="w-full min-h-[48px] rounded-xl border-2 border-line bg-white px-4 text-[15px] text-ink outline-none focus:border-magenta" />
+        className="min-h-[52px] w-full rounded-input border border-line bg-surface-alt px-4 text-[15px] text-ink outline-none placeholder:text-muted focus:border-plum" />
     </label>
   );
 }

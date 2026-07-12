@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Pet } from '@/lib/types';
-import { Btn, Chip, Field } from './ui';
+import { PillButton, SelectChip, Field, Sheet } from '@/components/design';
 
 export default function PetPicker({ pets, selected, onSelect, onPetAdded, userId }: {
   pets: Pet[]; selected: Pet | null; onSelect: (p: Pet) => void; onPetAdded: (p: Pet) => void; userId: string;
@@ -25,29 +25,33 @@ export default function PetPicker({ pets, selected, onSelect, onPetAdded, userId
     setOpen(false); setF({ name: '', breed: '', age: '', aggressive: false, rescue: false, notes: '' });
   };
 
+  const Toggle = ({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) => (
+    <label className="flex min-h-[48px] items-center gap-3 text-[15px] text-body">
+      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="h-5 w-5 accent-plum" />
+      {label}
+    </label>
+  );
+
   return (
     <div>
-      <p className="mb-2 font-bold text-ink">Who's this for? 🐕</p>
-      <div className="flex flex-wrap">
-        {pets.map(p => <Chip key={p.id} label={p.name} selected={selected?.id === p.id} onClick={() => onSelect(p)} />)}
-        <Chip label="+ Add furbaby" onClick={() => setOpen(true)} />
+      <div className="flex flex-wrap gap-2">
+        {pets.map(p => <SelectChip key={p.id} label={p.name} selected={selected?.id === p.id} onClick={() => onSelect(p)} />)}
+        <SelectChip label="+ Add furbaby" onClick={() => setOpen(true)} />
       </div>
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center" onClick={() => setOpen(false)}>
-          <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-6 sm:rounded-2xl" onClick={e => e.stopPropagation()}>
-            <h3 className="mb-4 font-display text-xl font-black text-magenta">New furbaby</h3>
-            <Field label="Name *" value={f.name} onChange={e => setF(s => ({ ...s, name: e.target.value }))} placeholder="e.g. Mylo" />
-            <Field label="Breed" value={f.breed} onChange={e => setF(s => ({ ...s, breed: e.target.value }))} placeholder="e.g. Indie" />
-            <Field label="Age (years)" value={f.age} onChange={e => setF(s => ({ ...s, age: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder="e.g. 3" />
-            <label className="mb-2 flex items-center gap-2 text-sm text-ink"><input type="checkbox" checked={f.aggressive} onChange={e => setF(s => ({ ...s, aggressive: e.target.checked }))} className="h-5 w-5 accent-magenta" /> Can be aggressive with strangers</label>
-            <label className="mb-3 flex items-center gap-2 text-sm text-ink"><input type="checkbox" checked={f.rescue} onChange={e => setF(s => ({ ...s, rescue: e.target.checked }))} className="h-5 w-5 accent-magenta" /> Rescue</label>
-            <Field label="Medical / critical notes" value={f.notes} onChange={e => setF(s => ({ ...s, notes: e.target.value }))} placeholder="Anything our partner should know" />
-            {err && <p className="mb-2 text-sm text-red-600">{err}</p>}
-            <Btn onClick={save} loading={saving} className="w-full">Save furbaby</Btn>
-            <Btn kind="ghost" onClick={() => setOpen(false)} className="mt-2 w-full">Cancel</Btn>
-          </div>
+
+      <Sheet open={open} onClose={() => setOpen(false)} title="New furbaby">
+        <Field label="Name *" value={f.name} onChange={e => setF(s => ({ ...s, name: e.target.value }))} placeholder="e.g. Mylo" />
+        <Field label="Breed" value={f.breed} onChange={e => setF(s => ({ ...s, breed: e.target.value }))} placeholder="e.g. Indie" />
+        <Field label="Age (years)" value={f.age} onChange={e => setF(s => ({ ...s, age: e.target.value.replace(/[^0-9.]/g, '') }))} placeholder="e.g. 3" />
+        <div className="mb-3">
+          <Toggle label="Can be aggressive with strangers" checked={f.aggressive} onChange={v => setF(s => ({ ...s, aggressive: v }))} />
+          <Toggle label="Rescue" checked={f.rescue} onChange={v => setF(s => ({ ...s, rescue: v }))} />
         </div>
-      )}
+        <Field label="Medical / critical notes" value={f.notes} onChange={e => setF(s => ({ ...s, notes: e.target.value }))} placeholder="Anything our partner should know" />
+        {err && <p className="mb-3 text-[13px] font-medium text-danger">{err}</p>}
+        <PillButton onClick={save} loading={saving}>Save furbaby</PillButton>
+        <button onClick={() => setOpen(false)} className="mt-2 w-full py-3 text-[15px] font-semibold text-muted">Cancel</button>
+      </Sheet>
     </div>
   );
 }

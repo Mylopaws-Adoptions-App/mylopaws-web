@@ -1,8 +1,9 @@
 'use client';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Btn } from '@/components/ui';
+import { PillButton } from '@/components/design';
 
 export default function Login() {
   const [busy, setBusy] = useState(false);
@@ -23,19 +24,23 @@ export default function Login() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col bg-magenta">
-      <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-        <div className="text-7xl">🐾</div>
-        <h1 className="mt-2 font-display text-5xl font-black text-white">Mylopaws</h1>
-        <p className="mt-3 max-w-xs text-lg font-semibold leading-snug text-brass">Pet travel & dermacare, made effortless.</p>
+    <main className="mx-auto flex min-h-screen max-w-[480px] flex-col bg-white px-5 pt-16">
+      <h1 className="text-[32px] font-extrabold tracking-[-0.5px] text-ink">Sign In</h1>
+      <p className="mt-2 text-[15px] leading-[1.5] text-body">Pet travel &amp; dermacare, made effortless.</p>
+
+      <div className="mt-8">
+        <PillButton onClick={signIn} loading={busy}>Continue with Google</PillButton>
+        {err && <p className="mt-3 text-center text-[13px] font-medium text-danger">{err}</p>}
+        <p className="mt-4 text-center text-[12px] leading-[1.5] text-muted">By continuing you agree to our Terms &amp; Privacy Policy at mylopaws.com</p>
       </div>
-      <div className="rounded-t-[28px] bg-cream px-6 pb-12 pt-8">
-        <div className="mx-auto max-w-sm">
-          <Btn onClick={signIn} loading={busy} className="w-full">Continue with Google</Btn>
-          {err && <p className="mt-3 text-center text-sm text-red-600">{err}</p>}
-          <p className="mt-4 text-center text-xs text-ink-soft">By continuing you agree to our Terms & Privacy Policy at mylopaws.com</p>
-        </div>
-      </div>
+
+      <div className="mt-auto flex items-end justify-center pb-4 text-[84px] leading-none" aria-hidden>🐕🐈</div>
+
+      {/* Discreet staff entry point — subordinate to the primary Google CTA. */}
+      <Link href="/ops/login"
+        className="mb-4 block text-center text-[12px] font-medium text-muted underline decoration-line underline-offset-4">
+        Staff? Admin login
+      </Link>
     </main>
   );
 }

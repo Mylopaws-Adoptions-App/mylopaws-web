@@ -4,11 +4,20 @@ import { useCallback, useEffect, useState } from 'react';
 import AuthGate, { useSession } from '@/components/AuthGate';
 import Nav from '@/components/Nav';
 import { supabase } from '@/lib/supabase';
-import { Badge, Chip, Empty, Spinner } from '@/components/ui';
+import { STATUS_META } from '@/lib/types';
+import { PageShell, Segmented, LoadingState, EmptyState, Icons } from '@/components/design';
 
 type Filter = 'upcoming' | 'live' | 'past';
 const LIVE = ['on_the_way', 'in_progress', 'in_stay'];
 const PAST = ['delivered', 'cancelled', 'completed'];
+
+function StatusBadge({ status }: { status: string }) {
+  const label = STATUS_META[status]?.label ?? status;
+  const tone = LIVE.includes(status) ? 'bg-mint/50 text-ink'
+    : PAST.includes(status) ? 'bg-surface-alt text-muted'
+    : 'bg-plum-soft text-plum';
+  return <span className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-bold ${tone}`}>{label}</span>;
+}
 
 function Bookings() {
   const { session } = useSession();
@@ -38,42 +47,47 @@ function Bookings() {
     return () => { supabase.removeChannel(ch); };
   }, [load, session]);
 
-  if (!all) return <Spinner label="Fetching your bookings…" />;
-  const filtered = all.filter(b =>
+  const filtered = (all ?? []).filter(b =>
     filter === 'live' ? LIVE.includes(b.status) : filter === 'past' ? PAST.includes(b.status) : !PAST.includes(b.status) && !LIVE.includes(b.status));
 
   return (
-    <main className="mx-auto max-w-3xl px-5 py-8">
-      <h1 className="font-display text-3xl font-black">My Bookings</h1>
-      <div className="mt-4 flex flex-wrap">
-        {(['upcoming', 'live', 'past'] as Filter[]).map(f =>
-          <Chip key={f} label={f[0].toUpperCase() + f.slice(1)} selected={filter === f} onClick={() => setFilter(f)} />)}
-      </div>
-      {filtered.length === 0
-        ? <Empty title={filter === 'live' ? 'Nothing live right now' : 'No bookings here yet'} sub="Book pet travel, Dermacare, or cat boarding from Home." />
-        : <div className="mt-4 space-y-3">
-            {filtered.map(b => (
-              <Link key={`${b.kind}-${b.id}`} href={b.kind === 'homes' ? `/homes/booking/${b.id}` : `/track/${b.kind}/${b.id}`}
-                className="block rounded-2xl border border-line bg-white p-4 transition-all hover:-translate-y-0.5 hover:shadow-md">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold">{b.kind === 'travel' ? '🚗 Travel' : b.kind === 'dermacare' ? '✨ Dermacare' : '🐱 Boarding'} · #{b.id}</span>
-                  <Badge status={b.status} />
-                </div>
-                <p className="mt-1 truncate text-sm text-ink-soft">
-                  {b.kind === 'travel' ? `${b.pickup_address?.split(',')[0]} → ${b.drop_address?.split(',')[0]}`
-                    : b.kind === 'dermacare' ? (b.therapy_names ?? 'Therapy session')
-                    : b.provider}
-                </p>
-                <p className="mt-1 text-sm font-semibold">
-                  {b.kind === 'travel' ? `${b.date_of_travel} · ${b.time_of_travel}`
-                    : b.kind === 'dermacare' ? `${b.date_of_appointment} · ${b.time_of_appointment}`
-                    : `${b.check_in} → ${b.check_out} · ${b.nights} night${b.nights === 1 ? '' : 's'}`} · {b.furbaby_name}
-                </p>
-                {b.kind !== 'homes' && LIVE.includes(b.status) && <p className="mt-1 text-sm font-bold text-blue-700">Track live →</p>}
-              </Link>
-            ))}
-          </div>}
-    </main>
+    <PageShell variant="plum" size="large" title="My Bookings" sheetClassName="pb-28">
+      <Segmented value={filter} onChange={v => setFilter(v as Filter)}
+        options={[{ value: 'upcoming', label: 'Upcoming' }, { value: 'live', label: 'Live' }, { value: 'past', label: 'Past' }]} />
+
+      {!all ? (
+        <LoadingState label="Fetching your bookings…" />
+      ) : filtered.length === 0 ? (
+        <EmptyState emoji="📋" title={filter === 'live' ? 'Nothing live right now' : 'No bookings here yet'}
+          sub="Book pet travel, Dermacare, or cat boarding from Home." />
+      ) : (
+        <div className="mt-4 space-y-3">
+          {filtered.map(b => (
+            <Link key={`${b.kind}-${b.id}`} href={b.kind === 'homes' ? `/homes/booking/${b.id}` : `/track/${b.kind}/${b.id}`}
+              className="block rounded-card border border-line bg-white p-4 shadow-card">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[15px] font-bold text-ink">{b.kind === 'travel' ? '🚗 Travel' : b.kind === 'dermacare' ? '✨ Dermacare' : '🐱 Boarding'} · #{b.id}</span>
+                <StatusBadge status={b.status} />
+              </div>
+              <p className="mt-1 truncate text-[13px] text-muted">
+                {b.kind === 'travel' ? `${b.pickup_address?.split(',')[0]} → ${b.drop_address?.split(',')[0]}`
+                  : b.kind === 'dermacare' ? (b.therapy_names ?? 'Therapy session') : b.provider}
+              </p>
+              <p className="mt-1 text-[13px] font-semibold text-body">
+                {b.kind === 'travel' ? `${b.date_of_travel} · ${b.time_of_travel}`
+                  : b.kind === 'dermacare' ? `${b.date_of_appointment} · ${b.time_of_appointment}`
+                  : `${b.check_in} → ${b.check_out} · ${b.nights} night${b.nights === 1 ? '' : 's'}`} · {b.furbaby_name}
+              </p>
+              {b.kind !== 'homes' && LIVE.includes(b.status) && (
+                <p className="mt-1 inline-flex items-center gap-1 text-[13px] font-bold text-plum">Track live <Icons.ChevronRight className="h-3.5 w-3.5" /></p>
+              )}
+            </Link>
+          ))}
+        </div>
+      )}
+      <Nav />
+    </PageShell>
   );
 }
-export default function Page() { return <AuthGate><><Nav /><Bookings /></></AuthGate>; }
+
+export default function Page() { return <AuthGate><Bookings /></AuthGate>; }

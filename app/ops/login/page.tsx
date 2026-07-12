@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { Btn, Field } from '@/components/ui';
+import { PillButton, Field } from '@/components/design';
 
 export default function OpsLogin() {
   const [email, setEmail] = useState('');
@@ -20,21 +20,20 @@ export default function OpsLogin() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col bg-night">
-      <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-        <div className="text-6xl">🐾</div>
-        <h1 className="mt-2 font-display text-4xl font-black text-white">Mylopaws Ops</h1>
-        <p className="mt-2 font-semibold text-brass">Seller & Operations Platform</p>
+    <main className="mx-auto flex min-h-screen max-w-[480px] flex-col bg-white">
+      <div className="flex flex-col items-center justify-center px-6 pb-8 pt-20 text-center">
+        <div className="text-5xl">🐾</div>
+        <h1 className="mt-3 text-[28px] font-extrabold tracking-[-0.5px] text-ink">Mylopaws Ops</h1>
+        <p className="mt-1 text-[14px] font-semibold text-plum">Seller &amp; Operations Platform</p>
       </div>
-      <div className="rounded-t-[28px] bg-cream px-6 pb-12 pt-8">
-        <form className="mx-auto max-w-sm" onSubmit={e => { e.preventDefault(); signIn(); }}>
-          <Field label="Email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@mylopaws.com" />
-          <Field label="Password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
-          {err && <p className="mb-3 text-sm text-red-600">{err}</p>}
-          <Btn type="submit" kind="secondary" loading={busy} className="w-full">Log In</Btn>
-          <p className="mt-4 text-center text-xs text-ink-soft">Staff & partner access only. Accounts are created by Mylopaws admins.</p>
-        </form>
-      </div>
+
+      <form className="mt-2 px-5" onSubmit={e => { e.preventDefault(); signIn(); }}>
+        <Field label="Email" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@mylopaws.com" />
+        <Field label="Password" type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" />
+        {err && <p className="mb-3 text-[13px] font-medium text-danger">{err}</p>}
+        <PillButton type="submit" loading={busy}>Log In</PillButton>
+        <p className="mt-4 text-center text-[12px] leading-[1.5] text-muted">Staff &amp; partner access only. Accounts are created by Mylopaws admins.</p>
+      </form>
     </main>
   );
 }

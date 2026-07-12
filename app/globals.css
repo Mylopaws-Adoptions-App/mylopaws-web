@@ -2,14 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background:
-    radial-gradient(1200px 500px at 85% -10%, rgba(239,202,88,0.14), transparent 60%),
-    radial-gradient(900px 420px at -10% 30%, rgba(105,26,71,0.06), transparent 55%),
-    #FBF7F2;
-}
-/* Google Places dropdown polish */
-.pac-container { border-radius: 14px; border: 1px solid #EEE5DC; box-shadow: 0 10px 30px rgba(43,34,51,.12); font-family: var(--font-body), sans-serif; }
+/* Background is WHITE, not cream (SKILL section 1). */
+body { background: #FFFFFF; }
+
+/* Google Places dropdown polish — retuned to the design-system line/surface tokens. */
+.pac-container { border-radius: 12px; border: 1px solid #E5E5E5; box-shadow: 0 4px 20px rgba(17,17,17,.10); font-family: 'Poppins', system-ui, sans-serif; }
 .pac-item { padding: 10px 12px; cursor: pointer; }
-.pac-item:hover { background: #FBF7F2; }
-:root { --font-display: 'Fraunces'; --font-body: 'Work Sans'; }
+.pac-item:hover { background: #F7F7F7; }
+:root { --font-display: 'Poppins'; --font-body: 'Poppins'; }

@@ -1,42 +1,40 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { HomeIcon, CarIcon, SparkleIcon, ListIcon, UserIcon } from '@/components/design/nav-icons';
 
+// Bottom tab bar (SKILL section 5): 5 tabs, white bg, hairline top border, ~64px.
+// Icon above 11px label. Active = plum, inactive = muted. Constrained to the
+// 480px phone shell and centered so it lines up with PageShell.
 const tabs = [
-  { href: '/', label: 'Home', icon: '🏠' },
-  { href: '/bookings', label: 'Bookings', icon: '📋' },
-  { href: '/profile', label: 'Profile', icon: '👤' },
+  { href: '/', label: 'Home', Icon: HomeIcon, exact: true },
+  { href: '/travel', label: 'Travel', Icon: CarIcon },
+  { href: '/dermacare', label: 'Dermacare', Icon: SparkleIcon },
+  { href: '/bookings', label: 'Bookings', Icon: ListIcon },
+  { href: '/profile', label: 'Profile', Icon: UserIcon },
 ];
 
 export default function Nav() {
   const path = usePathname();
   return (
-    <>
-      <header className="sticky top-0 z-40 border-b border-line bg-cream/90 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-3">
-          <Link href="/" className="font-display text-2xl font-black text-magenta">Mylopaws 🐾</Link>
-          <nav className="hidden gap-6 sm:flex">
-            {tabs.map(t => (
-              <Link key={t.href} href={t.href}
-                className={`text-sm font-bold ${path === t.href ? 'text-magenta' : 'text-ink-soft hover:text-ink'}`}>
-                {t.label}
-              </Link>
-            ))}
-            <button onClick={() => supabase.auth.signOut().then(() => location.assign('/login'))}
-              className="text-sm font-bold text-ink-soft hover:text-ink">Log out</button>
-          </nav>
-        </div>
-      </header>
-      {/* Mobile bottom tab bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-white sm:hidden">
-        {tabs.map(t => (
-          <Link key={t.href} href={t.href}
-            className={`flex flex-1 flex-col items-center py-2 text-[11px] font-bold ${path === t.href ? 'text-magenta' : 'text-ink-soft'}`}>
-            <span className="text-xl">{t.icon}</span>{t.label}
-          </Link>
-        ))}
-      </nav>
-    </>
+    <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-[480px] -translate-x-1/2 border-t border-line bg-white pb-[env(safe-area-inset-bottom)]">
+      <div className="flex">
+        {tabs.map(({ href, label, Icon, exact }) => {
+          const active = exact ? path === href : path === href || path.startsWith(href + '/');
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 py-2 text-[11px] font-semibold ${
+                active ? 'text-plum' : 'text-muted'
+              }`}
+            >
+              <Icon className="h-[22px] w-[22px]" />
+              {label}
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
   );
 }
