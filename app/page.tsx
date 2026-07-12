@@ -4,25 +4,15 @@ import { useEffect, useState } from 'react';
 import AuthGate, { useSession } from '@/components/AuthGate';
 import Nav from '@/components/Nav';
 import { supabase } from '@/lib/supabase';
-import { Card } from '@/components/ui';
 
 function Home() {
   const { session } = useSession();
   const [name, setName] = useState('');
-  const [waitlisted, setWaitlisted] = useState(false);
 
   useEffect(() => {
     supabase.from('customers').select('name').eq('id', session!.user.id).single()
       .then(({ data }) => setName((data?.name ?? '').split(' ')[0]));
   }, [session]);
-
-  const joinWaitlist = async () => {
-    const { data: c } = await supabase.from('customers').select('name, phone_number, email').eq('id', session!.user.id).single();
-    const { error } = await supabase.from('waitlist_signups').insert({
-      customer_id: session!.user.id, name: c?.name, phone_number: c?.phone_number, email: c?.email, service: 'homes',
-    });
-    if (!error) setWaitlisted(true);
-  };
 
   return (
     <>
@@ -46,19 +36,14 @@ function Home() {
           </Link>
         </div>
 
-        <Card className="mt-4 border-2 border-dashed !border-brass">
-          <div className="flex items-center gap-4">
-            <div className="text-3xl">🏡</div>
-            <div className="flex-1">
-              <p className="font-bold">Mylopaws Homes <span className="ml-1 rounded-full bg-brass/30 px-2 py-0.5 text-[10px] font-black text-magenta">COMING SOON</span></p>
-              <p className="text-sm text-ink-soft">Loving pet boarding, vetted homes.</p>
-            </div>
-            <button onClick={joinWaitlist} disabled={waitlisted}
-              className={`min-h-[44px] rounded-full px-4 text-sm font-black ${waitlisted ? 'bg-line text-ink-soft' : 'bg-brass text-ink hover:opacity-90'}`}>
-              {waitlisted ? 'On the list ✓' : 'Join waitlist'}
-            </button>
+        <Link href="/homes" className="group mt-4 flex items-center gap-4 rounded-3xl border-2 border-brass bg-[#FFF9EC] p-5 transition-transform hover:-translate-y-0.5">
+          <div className="text-4xl">🏡</div>
+          <div className="flex-1">
+            <p className="font-display text-lg font-black">Mylopaws Homes <span className="ml-1 rounded-full bg-brass/40 px-2 py-0.5 text-[10px] font-black text-magenta">NOW BOOKING</span></p>
+            <p className="text-sm text-ink-soft">Cat boarding by Joanna — vetted, cats-only home stays.</p>
           </div>
-        </Card>
+          <span className="font-black text-magenta transition-transform group-hover:translate-x-1">→</span>
+        </Link>
 
         <a href="https://wa.me/919887445671" target="_blank" rel="noreferrer"
           className="mt-6 flex items-center justify-center gap-2 py-3 font-bold text-ink hover:text-magenta">
