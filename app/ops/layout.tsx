@@ -50,6 +50,23 @@ export default function OpsLayout({ children }: { children: React.ReactNode }) {
   }
   const staff = me as Staff;
   const isAdmin = staff.role === 'admin';
+
+  // GAP 5 — hard route guard: a non-admin (supplier) hitting an admin-only route by URL is bounced,
+  // not just visually hidden. (Data is separately protected by RLS.)
+  const ADMIN_ONLY = ['/ops/team', '/ops/composer', '/ops/assistant', '/ops/homes'];
+  if (!isAdmin && ADMIN_ONLY.some(p => path === p || path.startsWith(p + '/'))) {
+    return (
+      <main className="mx-auto flex min-h-screen max-w-[480px] flex-col items-center justify-center bg-white px-6 text-center">
+        <div className="text-5xl">🔒</div>
+        <h1 className="mt-3 text-[22px] font-bold text-ink">Admins only</h1>
+        <p className="mt-2 max-w-sm text-[14px] leading-[1.5] text-muted">This area is restricted to Mylopaws admins.</p>
+        <div className="mt-6 w-full max-w-[240px]">
+          <PillButton onClick={() => router.replace('/ops/board/dermacare')}>Back to my jobs</PillButton>
+        </div>
+      </main>
+    );
+  }
+
   const tabs = [
     { href: '/ops/board/travel', label: '🚗 Travel' },
     { href: '/ops/board/dermacare', label: '✨ Dermacare' },

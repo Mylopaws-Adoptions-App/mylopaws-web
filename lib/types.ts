@@ -32,7 +32,7 @@ export const navUrl = (lat?: number | null, lng?: number | null, address?: strin
     ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address ?? '')}`;
 export type OrderStatus = 'unassigned' | 'assigned' | 'on_the_way' | 'in_progress' | 'delivered' | 'cancelled';
-export type Staff = { id: string; auth_user_id: string | null; name: string; email: string | null; phone_number: string | null; role: 'admin' | 'supplier'; vehicle_type: string | null; active: boolean };
+export type Staff = { id: string; auth_user_id: string | null; name: string; email: string | null; phone_number: string | null; role: 'admin' | 'supplier'; vehicle_type: string | null; active: boolean; verticals: string[] };
 export type HomesOrder = { id: number; provider: string; pawparent_name: string; furbaby_name: string; phone_number: string; check_in: string; check_out: string; nights: number; num_cats: number; rate_per_night: number; total_estimate: number; notes: string | null; status: string; cancel_reason: string | null; created_at: string };
 
 // Mylopaws Homes — cat boarding. Edit these in ONE place to change pricing/provider everywhere.
