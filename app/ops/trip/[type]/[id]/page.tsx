@@ -6,10 +6,18 @@ import { supabase, invokeFn } from '@/lib/supabase';
 import { loadMaps } from '@/lib/maps';
 import { Badge, Btn, Card, Spinner } from '@/components/ui';
 import { NEXT_STATUS, OrderStatus } from '@/lib/types';
+import DermacareJob from '@/components/ops/DermacareJob';
+
+// Dermacare uses the groomer job screen (ops-design skill); Travel keeps the live-tracked trip screen.
+export default function Trip() {
+  const { type } = useParams<{ type: 'travel' | 'dermacare'; id: string }>();
+  if (type === 'dermacare') return <DermacareJob />;
+  return <TravelTrip />;
+}
 
 // Trip screen: supplier advances status here; while on_the_way/in_progress the browser
 // streams GPS via watchPosition (works while this tab stays open — see docs for limits).
-export default function Trip() {
+function TravelTrip() {
   const { type, id } = useParams<{ type: 'travel' | 'dermacare'; id: string }>();
   const table = type === 'travel' ? 'orders' : 'dermacare_orders';
   const { me } = useStaff();

@@ -1,9 +1,36 @@
-export type Pet = { id: string; name: string; breed: string | null; age_years: number | null; aggressive: boolean; rescue: boolean; critical_notes: string | null };
+export type Pet = { id: string; name: string; breed: string | null; age_years: number | null; aggressive: boolean; aggression_level: number; rescue: boolean; critical_notes: string | null };
 export type Address = { id: string; label: string; address_text: string; lat: number | null; lng: number | null };
 export type Therapy = { id: string; sort_order: number; name: string; branded_name: string; description: string | null; target_symptoms: string | null; price: number; duration_min: number; image_url: string | null; active: boolean };
 export type Service = { id: string; sort_order: number; name: string; tagline: string | null; description: string | null; includes: string[] | null; base_price: number; duration_min: number; popular: boolean; active: boolean };
 export type Addon = { id: string; sort_order: number; name: string; description: string | null; price: number; active: boolean };
 export const rupees = (n: number | string) => `₹${Number(n).toLocaleString('en-IN')}`;
+
+// Aggression 0–3 (ops-design skill). 0 calm · 1 nervous · 2 handle with care · 3 high risk.
+export const AGGRESSION_META = [
+  { label: 'Calm', text: 'text-muted', chip: 'bg-surface-alt text-muted' },
+  { label: 'Nervous', text: 'text-amber-600', chip: 'bg-amber-100 text-amber-700' },
+  { label: 'Handle with care', text: 'text-orange-600', chip: 'bg-orange-100 text-orange-700' },
+  { label: 'High risk · two-person job', text: 'text-danger font-bold', chip: 'bg-danger/10 text-danger font-bold' },
+] as const;
+export const aggressionMeta = (level: number | null | undefined) => AGGRESSION_META[Math.max(0, Math.min(3, Number(level ?? 0)))];
+
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const ord = (n: number) => (n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th');
+// "13th Jul 2026, 10:00AM" from ('2026-07-13','10:00')
+export const fmtApptDateTime = (dateISO?: string, hhmm?: string) => {
+  if (!dateISO) return '';
+  const d = new Date(dateISO + 'T00:00:00');
+  const datePart = `${d.getDate()}${ord(d.getDate())} ${MON[d.getMonth()]} ${d.getFullYear()}`;
+  if (!hhmm) return datePart;
+  const h = Number(hhmm.slice(0, 2)); const m = hhmm.slice(3, 5);
+  return `${datePart}, ${((h + 11) % 12) + 1}:${m}${h < 12 ? 'AM' : 'PM'}`;
+};
+
+// Google Maps navigation URL to a destination (prefers coords, falls back to address text).
+export const navUrl = (lat?: number | null, lng?: number | null, address?: string | null) =>
+  lat != null && lng != null
+    ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address ?? '')}`;
 export type OrderStatus = 'unassigned' | 'assigned' | 'on_the_way' | 'in_progress' | 'delivered' | 'cancelled';
 export type Staff = { id: string; auth_user_id: string | null; name: string; email: string | null; phone_number: string | null; role: 'admin' | 'supplier'; vehicle_type: string | null; active: boolean };
 export type HomesOrder = { id: number; provider: string; pawparent_name: string; furbaby_name: string; phone_number: string; check_in: string; check_out: string; nights: number; num_cats: number; rate_per_night: number; total_estimate: number; notes: string | null; status: string; cancel_reason: string | null; created_at: string };

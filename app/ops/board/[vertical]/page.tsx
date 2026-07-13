@@ -6,6 +6,7 @@ import { useStaff } from '@/components/OpsContext';
 import { supabase, invokeFn } from '@/lib/supabase';
 import { NEXT_STATUS, OrderStatus, STATUS_META, Staff } from '@/lib/types';
 import { PillButton, Field, Sheet, LoadingState } from '@/components/design';
+import DermacareBoard from '@/components/ops/DermacareBoard';
 
 const SECTIONS: OrderStatus[] = ['unassigned', 'assigned', 'on_the_way', 'in_progress', 'delivered', 'cancelled'];
 
@@ -36,6 +37,13 @@ function ActBtn({ children, onClick, tone = 'primary', className = '' }: {
 }
 
 export default function Board() {
+  const { vertical } = useParams<{ vertical: 'travel' | 'dermacare' }>();
+  // Dermacare uses the groomer-workflow board (ops-design skill); Travel keeps the existing board.
+  if (vertical === 'dermacare') return <DermacareBoard />;
+  return <TravelBoard />;
+}
+
+function TravelBoard() {
   const { vertical } = useParams<{ vertical: 'travel' | 'dermacare' }>();
   const table = vertical === 'travel' ? 'orders' : 'dermacare_orders';
   const { me } = useStaff();
