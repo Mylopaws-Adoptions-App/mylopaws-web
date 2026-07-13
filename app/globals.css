@@ -5,7 +5,38 @@
 /* Background is WHITE, not cream (SKILL section 1). */
 body { background: #FFFFFF; }
 
-/* Google Places dropdown polish — retuned to the design-system line/surface tokens. */
+/* New Places API autocomplete (PlaceAutocompleteElement) styled to match our design inputs
+   (SKILL section 3: 52px tall, radius 12, 1px line border, surface-alt fill, Poppins 15, plum focus).
+   It renders its own input inside shadow DOM — we style via ::part() and CSS custom props. */
+.mp-autocomplete-host { width: 100%; }
+gmp-place-autocomplete.mp-autocomplete {
+  display: block;
+  width: 100%;
+  --gmpx-color-surface: #F7F7F7;
+  --gmpx-color-on-surface: #111111;
+  --gmpx-font-family-base: 'Poppins', system-ui, sans-serif;
+  --gmpx-font-size-base: 15px;
+}
+gmp-place-autocomplete.mp-autocomplete::part(input) {
+  box-sizing: border-box;
+  width: 100%;
+  height: 52px;
+  border: 1px solid #E5E5E5;
+  border-radius: 12px;
+  background: #F7F7F7;
+  padding: 0 16px;
+  font-family: 'Poppins', system-ui, sans-serif;
+  font-size: 15px;
+  color: #111111;
+  box-shadow: none;
+}
+gmp-place-autocomplete.mp-autocomplete::part(input)::placeholder { color: #7A7A7A; }
+gmp-place-autocomplete.mp-autocomplete::part(input):focus {
+  outline: none;
+  border-color: #6B1A47;
+}
+
+/* Legacy .pac-* dropdown styling retained harmlessly in case any legacy widget lingers. */
 .pac-container { border-radius: 12px; border: 1px solid #E5E5E5; box-shadow: 0 4px 20px rgba(17,17,17,.10); font-family: 'Poppins', system-ui, sans-serif; }
 .pac-item { padding: 10px 12px; cursor: pointer; }
 .pac-item:hover { background: #F7F7F7; }

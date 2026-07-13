@@ -9,7 +9,7 @@ import {
   PickupDropInput, RecapPill, ButterCallout, Sheet, Field, Icons,
 } from '@/components/design';
 import { supabase, getConfig } from '@/lib/supabase';
-import { loadMaps, getMapsAuthError, MapsKeyMissingError } from '@/lib/maps';
+import { importMapsLibrary, getMapsAuthError, MapsKeyMissingError } from '@/lib/maps';
 import { payForOrder } from '@/lib/razorpay';
 import { Pet, computeFare, mapsLink } from '@/lib/types';
 
@@ -63,17 +63,19 @@ function Travel() {
     supabase.from('customers').select('phone_number').eq('id', session!.user.id).single().then(({ data }) => setPhone(data?.phone_number ?? ''));
   }, [session]);
 
-  // Route (km/min) via Google Directions — same service as before.
+  // Route (km/min) via DirectionsService — verified working on our project (Directions API is
+  // enabled; only the legacy Places API is not). Loaded through the new async loader + importLibrary.
+  // Preserves the exact km/min that feed computeFare(app_config, km).
   useEffect(() => {
     if (!pickup || !drop) { setRoute(null); dirResult.current = null; return; }
-    loadMaps().then(g => {
-      setMapErr(null);
-      new g.maps.DirectionsService().route(
+    setMapErr(null);
+    importMapsLibrary<any>('routes').then(routesLib => {
+      const g = (window as any).google;
+      new routesLib.DirectionsService().route(
         { origin: { lat: pickup.lat, lng: pickup.lng }, destination: { lat: drop.lat, lng: drop.lng }, travelMode: g.maps.TravelMode.DRIVING },
         (res: any, status: string) => {
           if (status !== 'OK' || !res) {
-            const authErr = getMapsAuthError();
-            setErr(authErr ?? `Could not fetch route (${status}) — reselect locations.`);
+            setErr(getMapsAuthError() ?? `Could not fetch route (${status}) — please reselect locations.`);
             return;
           }
           setErr(null);
@@ -85,17 +87,21 @@ function Travel() {
     }).catch(e => { const m = describeMapsError(e); setMapErr(m); setErr(m); });
   }, [pickup, drop]);
 
-  // Init the ride map only when its screen is visible.
+  // Init the ride map only when its screen is visible; draw the route with DirectionsRenderer.
   useEffect(() => {
     if (step !== 3 || !mapDiv.current || mapRef.current) return;
-    loadMaps().then(g => {
-      setMapErr(null);
-      mapRef.current = new g.maps.Map(mapDiv.current!, { center: { lat: 12.9716, lng: 77.5946 }, zoom: 11, disableDefaultUI: true, zoomControl: true });
-      rendererRef.current = new g.maps.DirectionsRenderer({ map: mapRef.current, polylineOptions: { strokeColor: '#6B1A47', strokeWeight: 4 } });
-      if (dirResult.current) rendererRef.current.setDirections(dirResult.current);
-      // gm_authFailure fires slightly after the SDK loads; re-check for an auth/referrer/billing error.
-      setTimeout(() => { const a = getMapsAuthError(); if (a) setMapErr(a); }, 1500);
-    }).catch(e => setMapErr(describeMapsError(e)));
+    (async () => {
+      try {
+        const { Map } = await importMapsLibrary<any>('maps');
+        const routesLib: any = await importMapsLibrary('routes');
+        setMapErr(null);
+        mapRef.current = new Map(mapDiv.current!, { center: { lat: 12.9716, lng: 77.5946 }, zoom: 11, disableDefaultUI: true, zoomControl: true });
+        rendererRef.current = new routesLib.DirectionsRenderer({ map: mapRef.current, polylineOptions: { strokeColor: '#6B1A47', strokeWeight: 4 } });
+        if (dirResult.current) rendererRef.current.setDirections(dirResult.current);
+        // gm_authFailure fires slightly after load; re-check for an auth/referrer/billing error.
+        setTimeout(() => { const a = getMapsAuthError(); if (a) setMapErr(a); }, 1500);
+      } catch (e) { setMapErr(describeMapsError(e)); }
+    })();
   }, [step]);
 
   const days = useMemo(() => Array.from({ length: 10 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i); return d; }), []);
