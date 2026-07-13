@@ -1,6 +1,9 @@
 export type Pet = { id: string; name: string; breed: string | null; age_years: number | null; aggressive: boolean; rescue: boolean; critical_notes: string | null };
 export type Address = { id: string; label: string; address_text: string; lat: number | null; lng: number | null };
 export type Therapy = { id: string; sort_order: number; name: string; branded_name: string; description: string | null; target_symptoms: string | null; price: number; duration_min: number; image_url: string | null; active: boolean };
+export type Service = { id: string; sort_order: number; name: string; tagline: string | null; description: string | null; includes: string[] | null; base_price: number; duration_min: number; popular: boolean; active: boolean };
+export type Addon = { id: string; sort_order: number; name: string; description: string | null; price: number; active: boolean };
+export const rupees = (n: number | string) => `₹${Number(n).toLocaleString('en-IN')}`;
 export type OrderStatus = 'unassigned' | 'assigned' | 'on_the_way' | 'in_progress' | 'delivered' | 'cancelled';
 export type Staff = { id: string; auth_user_id: string | null; name: string; email: string | null; phone_number: string | null; role: 'admin' | 'supplier'; vehicle_type: string | null; active: boolean };
 export type HomesOrder = { id: number; provider: string; pawparent_name: string; furbaby_name: string; phone_number: string; check_in: string; check_out: string; nights: number; num_cats: number; rate_per_night: number; total_estimate: number; notes: string | null; status: string; cancel_reason: string | null; created_at: string };
