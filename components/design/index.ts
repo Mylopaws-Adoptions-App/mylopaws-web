@@ -11,4 +11,5 @@ export { Sheet } from './Sheet';
 export { Field, SelectChip, Segmented } from './Form';
 export { LoadingState, EmptyState, ErrorState } from './States';
 export { Photo, PhotoBg } from './Photo';
+export { LegalShell } from './LegalShell';
 export * as Icons from './icons';

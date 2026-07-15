@@ -68,12 +68,23 @@ export default function Login() {
         )}
 
         {err && <p className="mt-3 text-center text-[13px] font-medium text-danger">{err}</p>}
-        <p className="mt-4 text-center text-[12px] leading-[1.5] text-muted">By continuing you agree to our Terms &amp; Privacy Policy at mylopaws.com</p>
+        <p className="mt-4 text-center text-[12px] leading-[1.5] text-muted">
+          By continuing you agree to our{' '}
+          <Link href="/terms" className="font-medium text-plum underline underline-offset-2">Terms</Link> and{' '}
+          <Link href="/privacy" className="font-medium text-plum underline underline-offset-2">Privacy Policy</Link>.
+        </p>
       </div>
 
-      {/* Discreet staff entry point — subordinate to the primary Google CTA. */}
+      {/* Policy links + discreet staff entry point. */}
+      <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[12px] font-medium text-muted">
+        <Link href="/terms" className="underline decoration-line underline-offset-4">Terms &amp; Conditions</Link>
+        <span aria-hidden>·</span>
+        <Link href="/privacy" className="underline decoration-line underline-offset-4">Privacy Policy</Link>
+        <span aria-hidden>·</span>
+        <Link href="/cancellation" className="underline decoration-line underline-offset-4">Cancellation Policy</Link>
+      </div>
       <Link href="/ops/login"
-        className="mt-4 block text-center text-[12px] font-medium text-muted underline decoration-line underline-offset-4">
+        className="mt-3 block text-center text-[12px] font-medium text-muted underline decoration-line underline-offset-4">
         Staff? Admin login
       </Link>
     </main>
