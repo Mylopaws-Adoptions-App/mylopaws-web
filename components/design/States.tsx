@@ -1,6 +1,8 @@
 'use client';
 import React from 'react';
 import { PillButton } from './PillButton';
+import { Photo } from './Photo';
+import type { MediaKey } from '@/lib/media';
 
 /**
  * Standard data-state components (SKILL section 7 requires loading / empty /
@@ -19,18 +21,23 @@ export function LoadingState({ label = 'Loading…' }: { label?: string }) {
 
 export function EmptyState({
   emoji = '🐾',
+  photo,
   title,
   sub,
   action,
 }: {
   emoji?: string;
+  /** Optional warm photo shown instead of the emoji. */
+  photo?: MediaKey;
   title: string;
   sub?: string;
   action?: { label: string; onClick: () => void };
 }) {
   return (
-    <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
-      <div className="text-5xl">{emoji}</div>
+    <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+      {photo
+        ? <Photo srcKey={photo} alt="" className="mb-4 h-32 w-44" sizes="176px" />
+        : <div className="text-5xl">{emoji}</div>}
       <h3 className="mt-3 text-[20px] font-bold text-ink">{title}</h3>
       {sub && <p className="mt-1 max-w-xs text-[14px] leading-[1.5] text-muted">{sub}</p>}
       {action && (

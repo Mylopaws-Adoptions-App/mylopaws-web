@@ -10,4 +10,5 @@ export { ButterCallout } from './ButterCallout';
 export { Sheet } from './Sheet';
 export { Field, SelectChip, Segmented } from './Form';
 export { LoadingState, EmptyState, ErrorState } from './States';
+export { Photo, PhotoBg } from './Photo';
 export * as Icons from './icons';

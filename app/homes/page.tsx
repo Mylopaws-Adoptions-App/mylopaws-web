@@ -3,6 +3,7 @@ import Link from 'next/link';
 import AuthGate from '@/components/AuthGate';
 import Nav from '@/components/Nav';
 import { Btn, Card } from '@/components/ui';
+import { PhotoBg } from '@/components/design';
 import { HOMES_PROVIDER, HOMES_RATE_PER_NIGHT } from '@/lib/types';
 
 // ---- Edit Joanna's details here ----
@@ -20,10 +21,14 @@ function Homes() {
     <main className="mx-auto max-w-3xl px-5 py-8">
       <Link href="/" className="text-sm font-bold text-ink-soft hover:text-magenta">← Home</Link>
 
-      <div className="mt-3 overflow-hidden rounded-3xl bg-night p-7 text-white">
-        <span className="inline-block rounded-full bg-brass/30 px-3 py-1 text-[11px] font-black text-brass">MYLOPAWS HOMES · NOW BOOKING</span>
-        <h1 className="mt-3 font-display text-4xl font-black">Cat Boarding 🐱</h1>
-        <p className="mt-2 max-w-md text-white/85">Loving, at-home boarding for your cat while you travel — vetted, cats-only, and stress-free.</p>
+      <div className="relative mt-3 min-h-[220px] overflow-hidden rounded-3xl bg-night p-7 text-white">
+        <PhotoBg srcKey="homesCard" alt="A cat and dog resting peacefully together" priority
+          overlay="from-night via-night/80 to-night/40" />
+        <div className="relative z-10">
+          <span className="inline-block rounded-full bg-brass/30 px-3 py-1 text-[11px] font-black text-brass">MYLOPAWS HOMES · NOW BOOKING</span>
+          <h1 className="mt-3 font-display text-4xl font-black">Cat Boarding 🐱</h1>
+          <p className="mt-2 max-w-md text-white/85">Loving, at-home boarding for your cat while you travel — vetted, cats-only, and stress-free.</p>
+        </div>
       </div>
 
       <Card className="mt-4">

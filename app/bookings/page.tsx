@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import AuthGate, { useSession } from '@/components/AuthGate';
 import Nav from '@/components/Nav';
@@ -21,6 +22,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function Bookings() {
   const { session } = useSession();
+  const router = useRouter();
   const [all, setAll] = useState<any[] | null>(null);
   const [filter, setFilter] = useState<Filter>('upcoming');
 
@@ -58,8 +60,9 @@ function Bookings() {
       {!all ? (
         <LoadingState label="Fetching your bookings…" />
       ) : filtered.length === 0 ? (
-        <EmptyState emoji="📋" title={filter === 'live' ? 'Nothing live right now' : 'No bookings here yet'}
-          sub="Book pet travel, Dermacare, or cat boarding from Home." />
+        <EmptyState photo="emptyWarm" title={filter === 'live' ? 'Nothing live right now' : 'No bookings here yet'}
+          sub="Book pet travel, Dermacare, or cat boarding from Home."
+          action={{ label: 'Explore services', onClick: () => router.push('/') }} />
       ) : (
         <div className="mt-4 space-y-3">
           {filtered.map(b => (

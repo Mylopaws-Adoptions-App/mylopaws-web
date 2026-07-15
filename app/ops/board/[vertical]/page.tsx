@@ -7,6 +7,7 @@ import { supabase, invokeFn } from '@/lib/supabase';
 import { NEXT_STATUS, OrderStatus, STATUS_META, Staff } from '@/lib/types';
 import { PillButton, Field, Sheet, LoadingState } from '@/components/design';
 import DermacareBoard from '@/components/ops/DermacareBoard';
+import { toast } from '@/lib/toast';
 
 const SECTIONS: OrderStatus[] = ['unassigned', 'assigned', 'on_the_way', 'in_progress', 'delivered', 'cancelled'];
 
@@ -73,7 +74,7 @@ function TravelBoard() {
 
   const setStatus = async (order: any, status: OrderStatus, extra: object = {}) => {
     const { error } = await supabase.from(table).update({ status, ...extra }).eq('id', order.id);
-    if (error) { alert(error.message); return; }
+    if (error) { toast(error.message, 'error'); return; }
     invokeFn('send-push', { mode: 'status', order_type: vertical, order_id: order.id, status }).catch(() => {});
     load();
   };
@@ -156,7 +157,7 @@ function TravelBoard() {
         <button
           className="flex min-h-[52px] w-full items-center justify-center rounded-btn bg-danger text-[15px] font-bold text-white"
           onClick={async () => {
-            if (!reason.trim()) { alert('Every cancellation needs a reason — it goes to the audit trail.'); return; }
+            if (!reason.trim()) { toast('Every cancellation needs a reason — it goes to the audit trail.', 'error'); return; }
             await setStatus(cancelFor, 'cancelled', { cancel_reason: reason.trim() });
             setCancelFor(null); setReason('');
           }}>Cancel booking</button>

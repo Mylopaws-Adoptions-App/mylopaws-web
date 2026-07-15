@@ -155,11 +155,11 @@ function Travel() {
   // ── Success screen (screen 16) ───────────────────────────────────────────
   if (done) {
     return (
-      <div className="relative mx-auto flex min-h-screen max-w-[480px] flex-col bg-white px-5 pb-10 pt-6">
+      <div className="relative mx-auto flex min-h-screen max-w-[480px] flex-col bg-white px-5 pb-10 pt-[calc(1.5rem+env(safe-area-inset-top))]">
         <div className="flex items-center justify-between">
           <button onClick={() => router.push('/')} aria-label="Home" className="-ml-1 flex h-11 w-11 items-center justify-center text-ink"><Icons.ChevronLeft className="h-6 w-6" /></button>
         </div>
-        <div className="relative mx-auto mt-8 flex h-40 w-40 items-center justify-center">
+        <div className="mp-pop relative mx-auto mt-8 flex h-40 w-40 items-center justify-center">
           <span className="absolute left-2 top-6 h-2 w-2 rounded-full bg-mint" />
           <span className="absolute right-3 top-3 text-plum">+</span>
           <span className="absolute right-0 top-16 h-2 w-2 rounded-full bg-mint" />
@@ -169,9 +169,9 @@ function Travel() {
             <span className="flex h-[68px] w-[68px] items-center justify-center rounded-full bg-success text-white"><Icons.Check className="h-8 w-8" /></span>
           </span>
         </div>
-        <h1 className="mt-6 text-center text-[22px] font-bold text-ink">Your ride has been successfully booked</h1>
-        <p className="mt-3 text-center text-[14px] text-muted">{done.date}  |  {done.time}</p>
-        <p className="mt-1 text-center text-[14px] text-muted">Order #{done.id}</p>
+        <h1 className="mp-rise mt-6 text-center text-[22px] font-bold text-ink">Your ride has been successfully booked</h1>
+        <p className="mp-rise-2 mt-3 text-center text-[14px] text-muted">{done.date}  |  {done.time}</p>
+        <p className="mp-rise-2 mt-1 text-center text-[14px] text-muted">Order #{done.id}</p>
 
         <div className="mt-9 space-y-3">
           <div className="flex justify-between text-[13px]"><span className="font-semibold uppercase tracking-wide text-muted">Total amount</span><span className="font-bold text-ink">₹{done.total}</span></div>
@@ -179,8 +179,13 @@ function Travel() {
           <div className="flex justify-between text-[13px]"><span className="font-semibold uppercase tracking-wide text-muted">Amount to be paid</span><span className="font-bold text-success">₹{done.balance}</span></div>
         </div>
 
-        <div className="mt-auto space-y-3 pt-10">
+        <div className="mp-rise-3 mt-auto space-y-3 pt-10">
           <PillButton onClick={() => router.push(`/track/travel/${done.id}`)}>Track your ride</PillButton>
+          <PillButton variant="secondary" onClick={() => {
+            // Book again — keep pet & phone (repeat-customer convenience), clear the trip details.
+            setDone(null); setStep(1);
+            setDateISO(''); setTime(''); setPickup(null); setDrop(null); setRoute(null);
+          }}>Book another ride</PillButton>
           <button onClick={() => router.push('/')} className="w-full py-2 text-[15px] font-semibold text-muted">Go home</button>
         </div>
       </div>

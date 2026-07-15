@@ -5,7 +5,7 @@ import AuthGate from '@/components/AuthGate';
 import Nav from '@/components/Nav';
 import { supabase } from '@/lib/supabase';
 import { Service, rupees } from '@/lib/types';
-import { PageShell, PillButton, LoadingState, EmptyState, ErrorState, Icons } from '@/components/design';
+import { PageShell, PillButton, LoadingState, EmptyState, ErrorState, Icons, Photo } from '@/components/design';
 
 const DERMACARE_WA = '919148935441';
 
@@ -65,6 +65,10 @@ function Catalog() {
   return (
     <PageShell variant="plum" size="large" title="Dermacare" subtitle="Specialised skin & coat therapy — not standard grooming" sheetClassName="pb-28">
       <p className="text-[13px] text-muted">4.9★ from 97 pawparents · at your home or our HSR Layout studio.</p>
+
+      <Photo srcKey="dermacareCard" alt="A vet giving a dog a skin & coat assessment" priority
+        className="mt-4 aspect-[16/10] w-full"
+        overlay="from-black/45 via-transparent to-transparent" />
 
       {error ? (
         <ErrorState onRetry={load} />

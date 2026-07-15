@@ -49,7 +49,7 @@ export function PageShell({
 
   return (
     <div className={`relative mx-auto min-h-screen max-w-[480px] ${headerBg}`}>
-      <header className={`px-5 pt-6 ${size === 'large' ? 'pb-8' : 'pb-6'} ${onColor} ${headerClassName}`}>
+      <header className={`px-5 pt-[calc(1.5rem+env(safe-area-inset-top))] ${size === 'large' ? 'pb-8' : 'pb-6'} ${onColor} ${headerClassName}`}>
         {size === 'large' ? (
           <>
             <div className="mb-5 flex items-start justify-between">

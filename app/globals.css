@@ -41,3 +41,40 @@ gmp-place-autocomplete.mp-autocomplete::part(input):focus {
 .pac-item { padding: 10px 12px; cursor: pointer; }
 .pac-item:hover { background: #F7F7F7; }
 :root { --font-display: 'Poppins'; --font-body: 'Poppins'; }
+
+/* ── Micro-interactions (Stage 5). All motion is gated behind prefers-reduced-motion. ── */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes mp-pop {
+    0% { transform: scale(0.6); opacity: 0; }
+    60% { transform: scale(1.08); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .mp-pop { animation: mp-pop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  @keyframes mp-rise {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .mp-rise { animation: mp-rise 0.42s ease both; }
+  .mp-rise-2 { animation: mp-rise 0.42s ease 0.08s both; }
+  .mp-rise-3 { animation: mp-rise 0.42s ease 0.16s both; }
+  @keyframes mp-toast-in {
+    from { transform: translate(-50%, 16px); opacity: 0; }
+    to { transform: translate(-50%, 0); opacity: 1; }
+  }
+  .mp-toast { animation: mp-toast-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  /* Skeleton shimmer */
+  @keyframes mp-shimmer { 100% { transform: translateX(100%); } }
+  .mp-skeleton { position: relative; overflow: hidden; }
+  .mp-skeleton::after {
+    content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    animation: mp-shimmer 1.4s infinite;
+  }
+}
+
+/* Toast container: fixed, phone-width, above the tab bar. */
+.mp-toast-host {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(84px + env(safe-area-inset-bottom)); z-index: 60;
+  width: calc(100% - 40px); max-width: 440px; pointer-events: none;
+}

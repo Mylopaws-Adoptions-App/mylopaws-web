@@ -37,7 +37,11 @@ export type HomesOrder = { id: number; provider: string; pawparent_name: string;
 
 // Mylopaws Homes — cat boarding. Edit these in ONE place to change pricing/provider everywhere.
 export const HOMES_PROVIDER = 'Joanna Cat Boarding';
-export const HOMES_RATE_PER_NIGHT = 800; // ₹ per cat, per night
+// ₹ per cat, per night. Placed from a July-2026 Bengaluru market scan: budget starts ~₹600,
+// premium home boarding runs ₹800–1,200, cat hotels ₹1,000–1,800. ₹900 positions us as a
+// premium home stay without topping the market. Shown only as an ESTIMATE — Joanna confirms the
+// final quote before any payment. Edit here to change it everywhere.
+export const HOMES_RATE_PER_NIGHT = 900;
 export const HOMES_WHATSAPP = '919887445671';
 export const nightsBetween = (checkIn: string, checkOut: string) => {
   if (!checkIn || !checkOut) return 0;

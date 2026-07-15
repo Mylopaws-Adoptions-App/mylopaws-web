@@ -4,6 +4,7 @@ import { useStaff } from '@/components/OpsContext';
 import { supabase } from '@/lib/supabase';
 import { HomesOrder, STATUS_META } from '@/lib/types';
 import { PillButton, Field, Sheet, LoadingState, EmptyState } from '@/components/design';
+import { toast } from '@/lib/toast';
 
 // Homes lifecycle differs from travel/dermacare: no supplier, WhatsApp-driven (no push).
 const SECTIONS = ['requested', 'confirmed', 'in_stay', 'completed', 'cancelled'] as const;
@@ -55,7 +56,7 @@ export default function HomesBoard() {
 
   const setStatus = async (order: HomesOrder, status: string, extra: object = {}) => {
     const { error } = await supabase.from('homes_orders').update({ status, ...extra }).eq('id', order.id);
-    if (error) { alert(error.message); return; }
+    if (error) { toast(error.message, 'error'); return; }
     load();
   };
 
@@ -113,7 +114,7 @@ export default function HomesBoard() {
         <button
           className="flex min-h-[52px] w-full items-center justify-center rounded-btn bg-danger text-[15px] font-bold text-white"
           onClick={async () => {
-            if (!reason.trim()) { alert('Every cancellation needs a reason — it goes to the audit trail.'); return; }
+            if (!reason.trim()) { toast('Every cancellation needs a reason — it goes to the audit trail.', 'error'); return; }
             await setStatus(cancelFor!, 'cancelled', { cancel_reason: reason.trim() });
             setCancelFor(null); setReason('');
           }}>Cancel booking</button>
