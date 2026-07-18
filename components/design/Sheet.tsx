@@ -31,6 +31,29 @@ export function Sheet({
   const [closing, setClosing] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const dragStart = useRef<number | null>(null);
+  const isSearch = align === 'search';
+
+  // Keyboard-aware sizing for the bottom sheet. The panel is anchored to the LAYOUT viewport's
+  // bottom, so when the mobile keyboard opens it would otherwise sit *behind* the keyboard and the
+  // submit button becomes unreachable (the Add-Furbaby bug). We track the visual viewport: lift the
+  // panel above the keyboard (`kbInset`) and cap its height to the visible band so every field and
+  // the submit stay on-screen and internally scrollable.
+  const [kbInset, setKbInset] = useState(0);
+  const [availH, setAvailH] = useState<number | null>(null);
+  useEffect(() => {
+    if (!mounted || isSearch || typeof window === 'undefined') return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      setKbInset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
+      setAvailH(vv.height);
+    };
+    update();
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => { vv.removeEventListener('resize', update); vv.removeEventListener('scroll', update); };
+  }, [mounted, isSearch]);
+  const kbOpen = kbInset > 100; // ignore small browser-chrome deltas; real keyboards overlap far more
 
   // Keep the sheet mounted through its exit animation, then unmount.
   useEffect(() => {
@@ -51,8 +74,6 @@ export function Sheet({
   }, [mounted]);
 
   if (!mounted) return null;
-
-  const isSearch = align === 'search';
 
   // ── Drag-to-dismiss (bottom sheet only) ──
   const onHandleDown = (e: React.PointerEvent) => { dragStart.current = e.clientY; (e.target as HTMLElement).setPointerCapture?.(e.pointerId); };
@@ -93,10 +114,12 @@ export function Sheet({
   return (
     <div className="fixed inset-0 z-50 flex justify-center" onClick={onClose}>
       <div className={`absolute inset-0 bg-ink/40 ${backdropCls}`} />
-      <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-[480px]">
+      <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-[480px]"
+        style={kbOpen ? { bottom: kbInset } : undefined}>
         <div
           ref={panelRef}
-          className={`max-h-[85vh] overflow-y-auto rounded-t-sheet bg-white px-5 pb-[calc(env(safe-area-inset-bottom)+20px)] pt-2 ${closing ? 'mp-sheet-out' : 'mp-sheet-in'}`}
+          className={`max-h-[85dvh] overflow-y-auto rounded-t-sheet bg-white px-5 pb-[calc(env(safe-area-inset-bottom)+20px)] pt-2 ${closing ? 'mp-sheet-out' : 'mp-sheet-in'}`}
+          style={kbOpen && availH ? { maxHeight: Math.round(availH - 12) } : undefined}
           onClick={(e) => e.stopPropagation()}
         >
           <div

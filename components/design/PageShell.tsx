@@ -23,6 +23,7 @@ export function PageShell({
   variant = 'mint',
   size = 'large',
   title,
+  tagline,
   subtitle,
   onBack,
   rightAction,
@@ -36,6 +37,8 @@ export function PageShell({
   variant?: 'mint' | 'plum';
   size?: 'large' | 'compact';
   title: string;
+  /** Optional accent tagline rendered directly under the title (caller styles color). */
+  tagline?: React.ReactNode;
   subtitle?: string;
   onBack?: () => void;
   rightAction?: React.ReactNode;
@@ -75,6 +78,7 @@ export function PageShell({
               {rightAction}
             </div>
             <h1 className="text-[32px] font-extrabold leading-tight tracking-[-0.5px]">{title}</h1>
+            {tagline && <p className="mt-1.5 text-[14px] font-semibold">{tagline}</p>}
             {subtitle && <p className="mt-1 text-[15px] opacity-90">{subtitle}</p>}
           </>
         ) : (

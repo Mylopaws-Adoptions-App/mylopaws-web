@@ -1,12 +1,12 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { Staff } from '@/lib/types';
 import { LoadingState, PillButton } from '@/components/design';
 import { OpsCtx } from '@/components/OpsContext';
+import OpsTabBar from '@/components/ops/OpsTabBar';
 
 export default function OpsLayout({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -67,34 +67,21 @@ export default function OpsLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const tabs = [
-    { href: '/ops/board/travel', label: '🚗 Travel' },
-    { href: '/ops/board/dermacare', label: '✨ Dermacare' },
-    ...(isAdmin ? [
-      { href: '/ops/homes', label: '🐱 Homes' },
-      { href: '/ops/assistant', label: '🎙 Assistant' },
-      { href: '/ops/team', label: '👷 Team' },
-      { href: '/ops/composer', label: '📣 Push' },
-    ] : []),
-  ];
+  // Section navigation now lives in the persistent bottom bar (OpsTabBar). The top header is a slim
+  // brand bar that keeps Log out reachable on every screen (suppliers have no "More" menu).
   return (
     <OpsCtx.Provider value={{ session, me: staff }}>
-      <header className="sticky top-0 z-40 bg-plum text-white">
-        <div className="mx-auto flex max-w-2xl items-center gap-4 overflow-x-auto px-5 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <span className="shrink-0 text-[17px] font-bold">Mylopaws Ops</span>
-          <nav className="flex gap-4">
-            {tabs.map(t => (
-              <Link key={t.href} href={t.href}
-                className={`whitespace-nowrap text-[14px] font-semibold ${path.startsWith(t.href) ? 'text-butter' : 'text-white/70 hover:text-white'}`}>
-                {t.label}
-              </Link>
-            ))}
-          </nav>
+      <header className="sticky top-0 z-30 bg-plum text-white">
+        <div className="mx-auto flex max-w-2xl items-center px-5 py-3">
+          <span className="text-[17px] font-bold">Mylopaws Ops</span>
           <button onClick={() => supabase.auth.signOut().then(() => location.assign('/ops/login'))}
-            className="ml-auto shrink-0 text-[14px] font-semibold text-white/70 hover:text-white">Log out</button>
+            className="ml-auto text-[14px] font-semibold text-white/70 hover:text-white">Log out</button>
         </div>
       </header>
-      {children}
+      {/* Bottom-nav clearance for every ops screen; screens with their own fixed action bars lift
+          those above the nav using OPS_NAV_OFFSET. */}
+      <div className="pb-[calc(56px+env(safe-area-inset-bottom))]">{children}</div>
+      <OpsTabBar isAdmin={isAdmin} />
     </OpsCtx.Provider>
   );
 }

@@ -23,3 +23,20 @@ export const ListIcon = (p: P) => (
 export const UserIcon = (p: P) => (
   <svg {...svg(p)}><circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.3 3.1-5.5 7-5.5s7 2.2 7 5.5" /></svg>
 );
+
+// ── Ops bottom-nav icons ──
+export const CatIcon = (p: P) => (
+  <svg {...svg(p)}><path d="M5 10V5l3 2.2a7 7 0 018 0L19 5v5" /><path d="M5 10a7 7 0 0014 0v3a7 7 0 01-14 0z" /><path d="M9.5 13.5h.01M14.5 13.5h.01" /><path d="M12 15.5v1.2" /></svg>
+);
+export const TeamIcon = (p: P) => (
+  <svg {...svg(p)}><circle cx="9" cy="8" r="3" /><path d="M3 20c0-3 2.7-5 6-5s6 2 6 5" /><path d="M16 6.5a3 3 0 010 5.8" /><path d="M17.5 15.2c2 .7 3.5 2.3 3.5 4.8" /></svg>
+);
+export const MicIcon = (p: P) => (
+  <svg {...svg(p)}><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M6 11a6 6 0 0012 0" /><path d="M12 17v4M9 21h6" /></svg>
+);
+export const MegaphoneIcon = (p: P) => (
+  <svg {...svg(p)}><path d="M4 10v4a1 1 0 001 1h2l7 4V5L7 9H5a1 1 0 00-1 1z" /><path d="M17 8a4 4 0 010 8" /></svg>
+);
+export const MoreIcon = (p: P) => (
+  <svg {...svg(p)}><circle cx="5.5" cy="12" r="1.4" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" /><circle cx="18.5" cy="12" r="1.4" fill="currentColor" stroke="none" /></svg>
+);

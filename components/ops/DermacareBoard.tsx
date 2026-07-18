@@ -182,7 +182,7 @@ export default function DermacareBoard() {
 
       {/* GAP 4 — bulk assign bar */}
       {isAdmin && selected.size > 0 && (
-        <div className="fixed bottom-0 left-1/2 z-20 w-full max-w-2xl -translate-x-1/2 border-t border-line bg-white px-5 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
+        <div className="fixed bottom-[calc(56px+env(safe-area-inset-bottom))] left-1/2 z-30 w-full max-w-2xl -translate-x-1/2 border-t border-line bg-white px-5 pb-3 pt-3">
           <div className="flex items-center gap-3">
             <button onClick={() => setSelected(new Set())} className="text-[13px] font-semibold text-muted">Clear</button>
             <button onClick={() => setPicker({ ids: Array.from(selected), date: selectedList[0]?.date_of_appointment ?? todayISO() })}

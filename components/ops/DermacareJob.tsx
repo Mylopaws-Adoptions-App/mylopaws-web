@@ -241,7 +241,8 @@ function Shell({ children, onBack, sticky }: { children: React.ReactNode; onBack
         <h1 className="text-[20px] font-bold text-ink">Booking Detail</h1>
       </header>
       <main className={`px-5 pt-3 ${sticky ? 'pb-28' : 'pb-10'}`}>{children}</main>
-      {sticky && <div className="fixed bottom-0 left-1/2 z-20 w-full max-w-[480px] -translate-x-1/2 border-t border-line bg-white pb-[env(safe-area-inset-bottom)]">{sticky}</div>}
+      {/* Sticky Call/Navigate bar sits directly ABOVE the persistent ops bottom nav (56px+safe). */}
+      {sticky && <div className="fixed bottom-[calc(56px+env(safe-area-inset-bottom))] left-1/2 z-30 w-full max-w-[480px] -translate-x-1/2 border-t border-line bg-white">{sticky}</div>}
     </div>
   );
 }

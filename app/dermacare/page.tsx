@@ -62,7 +62,9 @@ function Catalog() {
   useEffect(load, []);
 
   return (
-    <PageShell variant="plum" size="large" title="Dermacare" subtitle="Specialised skin & coat therapy — not standard grooming" sheetClassName="pb-28">
+    <PageShell variant="plum" size="large" title="Dermacare"
+      tagline={<span className="text-mint">Pet Grooming with Love &amp; Care</span>}
+      subtitle="Specialised skin & coat therapy — not standard grooming" sheetClassName="pb-28">
       <p className="text-[13px] text-muted">4.9★ from 97 pawparents · at your home or our HSR Layout studio.</p>
 
       <Photo srcKey="dermacareCard" alt="A vet giving a dog a skin & coat assessment" priority
