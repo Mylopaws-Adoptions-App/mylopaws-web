@@ -24,7 +24,14 @@ export const metadata: Metadata = {
 };
 // viewportFit:'cover' is REQUIRED for env(safe-area-inset-*) to resolve to real values;
 // without it those insets are 0 and headers underlap the notch / browser chrome.
-export const viewport: Viewport = { themeColor: '#691A47', width: 'device-width', initialScale: 1, viewportFit: 'cover' };
+// interactiveWidget:'resizes-content' makes the on-screen keyboard SHRINK the layout viewport
+// (Android Chrome defaults to 'resizes-visual', which overlays the keyboard without resizing —
+// that is what pushes fixed-bottom CTAs, `100dvh`/`100vh` panels and the "Save" button behind
+// the keyboard). With 'resizes-content', dvh and fixed bottom bars stay above the keyboard.
+export const viewport: Viewport = {
+  themeColor: '#691A47', width: 'device-width', initialScale: 1,
+  viewportFit: 'cover', interactiveWidget: 'resizes-content',
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
