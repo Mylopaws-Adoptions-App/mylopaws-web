@@ -1,6 +1,8 @@
 'use client';
 import React from 'react';
+import { usePathname } from 'next/navigation';
 import { ChevronLeft } from './icons';
+import { showTabBar } from '@/components/TabBar';
 
 /**
  * THE signature Mylopaws layout (SKILL section 4): a full-bleed colored header
@@ -54,6 +56,9 @@ export function PageShell({
 }) {
   const onColor = variant === 'plum' ? 'text-white' : 'text-ink';
   const headerBg = variant === 'plum' ? 'bg-plum' : 'bg-mint';
+  // Stage 6: when the persistent tab bar is present on this route, reserve its height at the
+  // bottom of the sheet and lift the fixed CTA to stack directly above it.
+  const withTab = showTabBar(usePathname());
 
   return (
     <div className={`relative mx-auto min-h-screen max-w-[480px] overflow-x-clip ${headerBg}`}>
@@ -91,10 +96,15 @@ export function PageShell({
 
       <main className={`-mt-4 min-h-[70vh] rounded-t-[24px] bg-white px-5 pt-7 ${footer ? 'pb-32' : 'pb-10'} ${sheetClassName}`}>
         {contentKey !== undefined ? <div key={contentKey} className="mp-step">{children}</div> : children}
+        {/* Spacer reserves the tab-bar footprint so trailing content is never hidden behind it,
+            regardless of any sheetClassName padding override. */}
+        {withTab && <div aria-hidden className="h-[calc(56px_+_env(safe-area-inset-bottom))]" />}
       </main>
 
       {footer && (
-        <div className="fixed bottom-0 left-1/2 z-20 w-full max-w-[480px] -translate-x-1/2 border-t border-line bg-white px-5 pb-[env(safe-area-inset-bottom)] pt-3">
+        <div className={`fixed left-1/2 z-30 w-full max-w-[480px] -translate-x-1/2 border-t border-line bg-white px-5 pt-3 ${
+          withTab ? 'bottom-[calc(56px_+_env(safe-area-inset-bottom))]' : 'bottom-0 pb-[env(safe-area-inset-bottom)]'
+        }`}>
           <div className="pb-3">{footer}</div>
         </div>
       )}

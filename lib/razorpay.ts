@@ -37,7 +37,20 @@ export async function payForOrder(
       description: `${orderType === 'travel' ? 'Booking fee' : 'Therapy'} — #${orderId}`,
       prefill: { name: opts.name, email: opts.email, contact: opts.contact },
       theme: { color: '#691A47' },
-      handler: () => done('captured'),
+      // On success Razorpay hands us the signed triplet. Confirm it server-side
+      // (razorpay-verify flips payment_status='paid' immediately, idempotent with the webhook)
+      // BEFORE resolving. We still resolve 'captured' even if verify's network call fails —
+      // confirmPaid()/the webhook remain the backstop for flipping status.
+      handler: async (resp: any) => {
+        try {
+          await invokeFn('razorpay-verify', {
+            razorpay_order_id: resp?.razorpay_order_id,
+            razorpay_payment_id: resp?.razorpay_payment_id,
+            razorpay_signature: resp?.razorpay_signature,
+          });
+        } catch { /* fall through to confirmPaid()/webhook backstop */ }
+        done('captured');
+      },
       modal: { ondismiss: () => done('dismissed') },
     });
     r.open();

@@ -6,6 +6,7 @@ import { supabase, invokeFn } from '@/lib/supabase';
 import { loadMaps } from '@/lib/maps';
 import { Badge, Btn, Card, Spinner } from '@/components/ui';
 import { NEXT_STATUS, OrderStatus } from '@/lib/types';
+import { toast } from '@/lib/toast';
 import DermacareJob from '@/components/ops/DermacareJob';
 
 // Dermacare uses the groomer job screen (ops-design skill); Travel keeps the live-tracked trip screen.
@@ -28,6 +29,7 @@ function TravelTrip() {
   const [loc, setLoc] = useState<any | null>(null);
   const [gpsErr, setGpsErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [calling, setCalling] = useState(false);
   const watchId = useRef<number | null>(null);
   const lastSent = useRef(0);
   const mapDiv = useRef<HTMLDivElement>(null);
@@ -96,6 +98,21 @@ function TravelTrip() {
     });
   }, [order, loc, type]);
 
+  // Masked call: rings the supplier from the Plivo number, then bridges the customer. The
+  // customer's real number never reaches this client.
+  const callClient = async () => {
+    setCalling(true);
+    try {
+      await invokeFn('plivo-mask-call', { order_type: type, order_id: Number(id) });
+      toast('Connecting your call…', 'info');
+    } catch (e: any) {
+      const m = String(e?.message ?? '');
+      toast(m.includes('configured') ? 'Calling isn’t set up yet.' : m.includes('phone') ? 'No phone number on file for this call.' : 'Couldn’t connect the call — please try again.', 'error');
+    } finally {
+      setCalling(false);
+    }
+  };
+
   const advance = async () => {
     const step = NEXT_STATUS[order.status as OrderStatus];
     if (!step) return;
@@ -140,7 +157,13 @@ function TravelTrip() {
           <p>✨ {order.therapy_names}</p>
           <p><a className="text-blue-700 underline" href={order.address_maps_link ?? '#'} target="_blank" rel="noreferrer">🏠 {order.address_text}</a></p>
         </>)}
-        <p><a className="text-blue-700 underline" href={`tel:${order.phone_number}`}>📞 {order.pawparent_name} · {order.phone_number}</a></p>
+        <div className="flex items-center justify-between gap-3 pt-1">
+          <span className="font-semibold text-ink">{order.pawparent_name}</span>
+          <button onClick={callClient} disabled={calling}
+            className="rounded-full bg-plum px-4 py-2 text-[14px] font-bold text-white disabled:opacity-60">
+            {calling ? 'Connecting…' : '📞 Call'}
+          </button>
+        </div>
       </Card>
 
       {step && (isSupplier || me?.role === 'admin') && (

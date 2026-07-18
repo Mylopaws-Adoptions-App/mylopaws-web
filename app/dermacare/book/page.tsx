@@ -9,7 +9,7 @@ import { payForOrder, confirmPaid } from '@/lib/razorpay';
 import { toast } from '@/lib/toast';
 import { track } from '@/lib/analytics';
 import { Address, Pet, Service, Addon, mapsLink, rupees, placeName } from '@/lib/types';
-import { PageShell, PillButton, SelectChip, Field, LoadingState, ErrorState, Icons } from '@/components/design';
+import { PageShell, PillButton, SelectChip, Field, DateField, LoadingState, ErrorState, Icons } from '@/components/design';
 
 const SLOTS = ['11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
 const to12 = (hhmm: string) => { const h = Number(hhmm.slice(0, 2)); return `${((h + 11) % 12) + 1}:00 ${h < 12 ? 'AM' : 'PM'}`; };
@@ -103,7 +103,7 @@ function BookInner() {
         setErr('Payment failed. Tap “Pay & book” to try again.');
         toast('Payment failed — please try again.', 'error');
       } else {
-        setErr('Payment received — we’re confirming your booking. It’ll appear in My Bookings shortly.');
+        setErr('We’re confirming your payment — it’ll appear in My Bookings shortly.');
         toast('Confirming your payment…', 'info');
       }
     } catch (e: any) {
@@ -226,7 +226,7 @@ function BookInner() {
         {addr && <p className="text-[13px] font-medium text-success">✓ {placeName(addr.name, addr.address)}</p>}
 
         <h2 className="mt-7 text-[17px] font-bold text-ink">Date &amp; time</h2>
-        <div className="mt-3"><Field type="date" value={date} min={new Date().toISOString().slice(0, 10)} onChange={e => setDate(e.target.value)} /></div>
+        <div className="mt-3"><DateField value={date} min={new Date().toISOString().slice(0, 10)} onChange={setDate} /></div>
         <div className="flex flex-wrap gap-2">{SLOTS.map(s => <SelectChip key={s} label={to12(s)} selected={slot === s} onClick={() => setSlot(s)} />)}</div>
 
         <h2 className="mt-7 text-[17px] font-bold text-ink">Contact number</h2>

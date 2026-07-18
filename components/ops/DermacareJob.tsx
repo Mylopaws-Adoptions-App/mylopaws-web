@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useStaff } from '@/components/OpsContext';
 import { supabase, invokeFn } from '@/lib/supabase';
 import { aggressionMeta, fmtApptDateTime, navUrl, rupees } from '@/lib/types';
+import { toast } from '@/lib/toast';
 import { Sheet, Field, LoadingState, ErrorState, Icons } from '@/components/design';
 
 type Row = any;
@@ -21,6 +22,7 @@ export default function DermacareJob() {
   const [payment, setPayment] = useState<Row | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [calling, setCalling] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [collectOpen, setCollectOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -64,7 +66,9 @@ export default function DermacareJob() {
   const total = (serviceItem ? serviceAmount + addonsTotal : Number(order.total_amount ?? 0));
 
   const isCod = order.payment_mode === 'cod';
-  const paid = isCod ? !!order.collected_at : payment?.status === 'paid';
+  // Online is pay-and-book: an order only reaches this board once payment_status='paid', so treat
+  // it as paid for the completion gate even if the payments-row lookup is momentarily stale.
+  const paid = isCod ? !!order.collected_at : (payment?.status === 'paid' || order.payment_status === 'paid');
   const agg = aggressionMeta(pet?.aggression_level);
 
   const setStatus = async (status: string) => {
@@ -86,6 +90,21 @@ export default function DermacareJob() {
     setCollectOpen(false); load();
   };
 
+  // Masked call: rings the supplier from the Plivo number, then bridges the customer. The
+  // customer's real number never reaches this client.
+  const callClient = async () => {
+    setCalling(true);
+    try {
+      await invokeFn('plivo-mask-call', { order_type: 'dermacare', order_id: order.id });
+      toast('Connecting your call…', 'info');
+    } catch (e: any) {
+      const m = String(e?.message ?? '');
+      toast(m.includes('configured') ? 'Calling isn’t set up yet.' : m.includes('phone') ? 'No phone number on file for this call.' : 'Couldn’t connect the call — please try again.', 'error');
+    } finally {
+      setCalling(false);
+    }
+  };
+
   const setPaymentMode = async (mode: 'online' | 'cod') => {
     setBusy(true);
     await supabase.from('dermacare_orders').update({ payment_mode: mode }).eq('id', order.id);
@@ -100,7 +119,7 @@ export default function DermacareJob() {
   return (
     <Shell onBack={() => router.push('/ops/board/dermacare')} sticky={
       <div className="grid grid-cols-2">
-        <a href={`tel:${order.phone_number}`} className="flex min-h-[56px] items-center justify-center border-r border-line text-[15px] font-bold text-plum">Call Client</a>
+        <button onClick={callClient} disabled={calling} className="flex min-h-[56px] items-center justify-center border-r border-line text-[15px] font-bold text-plum disabled:opacity-60">{calling ? 'Connecting…' : 'Call Client'}</button>
         <a href={navUrl(order.lat, order.lng, order.address_text)} target="_blank" rel="noreferrer" className="flex min-h-[56px] items-center justify-center bg-plum text-[15px] font-bold text-white">Navigate</a>
       </div>
     }>

@@ -2,7 +2,7 @@
 export { PageShell } from './PageShell';
 export { PillButton } from './PillButton';
 export { ModePill, ModePillRow } from './ModePillRow';
-export { DateTile } from './DateTile';
+export { DateTile, DateField } from './DateTile';
 export { TimeSlot } from './TimeSlot';
 export { PickupDropInput } from './PickupDropInput';
 export { RecapPill } from './RecapPill';

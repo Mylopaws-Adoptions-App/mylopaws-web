@@ -173,7 +173,7 @@ function Travel() {
         setErr('Payment failed. Tap “Pay Booking Amount” to try again.');
         toast('Payment failed — please try again.', 'error');
       } else {
-        setErr('Payment received — we’re confirming your booking. It’ll appear in My Bookings shortly.');
+        setErr('We’re confirming your payment — it’ll appear in My Bookings shortly.');
         toast('Confirming your payment…', 'info');
       }
     } catch (e: any) {

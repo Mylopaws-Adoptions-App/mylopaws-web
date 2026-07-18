@@ -20,19 +20,15 @@ const tabs = [
   { href: '/profile', label: 'Profile', Icon: UserIcon },
 ];
 
-// Show the tab bar only on the customer surfaces that had it before — replicated exactly so
-// behaviour is unchanged apart from the bar now being reliably fixed. Focused booking sub-flows
-// with their own bottom CTA (the Travel flow, /dermacare/book), auth, ops, legal and track pages
-// deliberately omit it (default = hidden).
-function showTabBar(path: string): boolean {
-  return (
-    path === '/' ||
-    path === '/bookings' ||
-    path === '/profile' ||
-    path === '/dermacare' ||
-    path === '/homes' ||
-    path.startsWith('/homes/book') // /homes/book and /homes/booking/[id]
-  );
+// Persistent bottom nav on EVERY customer route (Stage 6) — including deep booking steps
+// (/travel, /dermacare/book) and /track. Booking flows keep their own fixed CTA, which PageShell
+// stacks directly ABOVE this bar. We hide the bar only on non-customer surfaces: auth/login, the
+// ops app, and the standalone legal pages. Exported so PageShell reserves space + offsets its CTA
+// consistently (single source of truth for when the bar is present).
+const HIDE_TABBAR = ['/login', '/auth', '/ops', '/terms', '/privacy', '/cancellation'];
+export function showTabBar(path: string | null): boolean {
+  if (!path) return false;
+  return !HIDE_TABBAR.some((p) => path === p || path.startsWith(p + '/'));
 }
 
 export default function TabBar() {

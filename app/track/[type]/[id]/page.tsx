@@ -21,6 +21,7 @@ function Track() {
   const [loc, setLoc] = useState<any | null>(null);
   const [payment, setPayment] = useState<any | null>(null);
   const [retrying, setRetrying] = useState(false);
+  const [polls, setPolls] = useState(0); // Stage 3: "Confirming payment…" poll counter (2s × 15 ≈ 30s).
   const mapDiv = useRef<HTMLDivElement>(null);
   const mapObjs = useRef<{ map?: any; sup?: any; dest?: any }>({});
 
@@ -47,6 +48,17 @@ function Track() {
       }).subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [id, type, table, load]);
+
+  // Stage 3: right after checkout the payment may still be settling. While an attempt is
+  // in-flight ('created') and unconfirmed, poll every 2s up to ~30s so the screen resolves
+  // itself to Confirmed or Failed without the customer refreshing.
+  useEffect(() => {
+    if (!order) return;
+    if (order.payment_status === 'paid' || order.status === 'cancelled') return;
+    if (payment?.status !== 'created' || polls >= 15) return;
+    const t = setTimeout(() => { setPolls(p => p + 1); load(); }, 2000);
+    return () => clearTimeout(t);
+  }, [order, payment, polls, load]);
 
   const live = order && (order.status === 'on_the_way' || order.status === 'in_progress');
 
@@ -92,9 +104,18 @@ function Track() {
 
   const stale = loc ? Date.now() - new Date(loc.updated_at).getTime() > 90_000 : false;
   const stepIdx = STEPS.indexOf(order.status);
-  // An order is only really "booked" once payment is verified server-side. Until then we show a
-  // pending-payment state, not the normal status ladder / "Finding partner".
-  const unpaid = order.payment_status !== 'paid' && order.status !== 'cancelled';
+  // An order is only really "booked" once payment is verified server-side (payment_status='paid').
+  // Everything else derives from the REAL payment_status — never optimistic text.
+  const paid = order.payment_status === 'paid';
+  const cancelled = order.status === 'cancelled';
+  const payFailed = payment?.status === 'failed';
+  // Still settling: an attempt is in-flight and we're inside the poll window.
+  const processing = !paid && !cancelled && !payFailed && payment?.status === 'created' && polls < 15;
+  // Couldn't confirm: explicit failure, or the poll window elapsed without a 'paid' flip.
+  const failed = !paid && !cancelled && !processing;
+  const waNumber = type === 'travel' ? '919036608453' : '919148935441';
+  // The amount we actually charged (from the verified payment row) — shown only when paid.
+  const paidAmount = payment?.amount ?? order.total_amount ?? order.booking_fee;
 
   const payNow = () => {
     setRetrying(true);
@@ -120,15 +141,44 @@ function Track() {
         <div className="mb-4 rounded-card border border-danger/30 bg-danger/5 p-4"><p className="font-bold text-danger">Cancelled{order.cancel_reason ? `: ${order.cancel_reason}` : ''}</p></div>
       )}
 
-      {unpaid && (
-        <div className="mb-4 rounded-card bg-butter p-4">
-          <p className="text-[15px] font-bold text-ink">Payment pending</p>
-          <p className="mt-1 text-[13px] leading-[1.5] text-body">This booking isn’t confirmed yet — complete the payment to lock it in. You won’t be charged twice if a previous attempt already went through.</p>
-          <div className="mt-3"><PillButton loading={retrying} onClick={payNow}>Complete payment</PillButton></div>
+      {paid && (
+        <div className="mb-4 rounded-card border border-success/25 bg-success/5 p-5 text-center mp-pop">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-success text-[28px] font-bold text-white">✓</div>
+          <p className="mt-3 text-[19px] font-extrabold text-ink">Booking confirmed!</p>
+          <p className="mt-1 text-[13px] leading-[1.5] text-body">We’ll assign your specialist and confirm the details on WhatsApp.</p>
+          <p className="mt-3 inline-block rounded-full bg-white px-4 py-1 text-[13px] font-bold text-success shadow-card">₹{paidAmount} paid</p>
+          <button onClick={() => router.push('/bookings')} className="mt-4 min-h-[48px] w-full rounded-btn bg-plum text-[14px] font-bold text-white transition active:scale-[0.98]">View My Bookings</button>
         </div>
       )}
 
-      {!unpaid && (
+      {processing && (
+        <div className="mb-4 flex items-center gap-3 rounded-card bg-butter p-4" role="status" aria-live="polite">
+          <span className="h-5 w-5 shrink-0 animate-spin rounded-full border-2 border-plum/30 border-t-plum" />
+          <div>
+            <p className="text-[15px] font-bold text-ink">Confirming your payment…</p>
+            <p className="mt-0.5 text-[13px] leading-[1.5] text-body">This usually takes a few seconds. Please don’t close this screen.</p>
+          </div>
+        </div>
+      )}
+
+      {failed && (
+        <div className="mb-4 rounded-card border border-danger/25 bg-danger/5 p-4">
+          <p className="text-[15px] font-bold text-ink">{payFailed ? 'Payment didn’t go through' : 'Payment incomplete'}</p>
+          <p className="mt-1 text-[13px] leading-[1.5] text-body">
+            {payFailed
+              ? 'Your payment didn’t complete, so this booking isn’t confirmed. You can try again — you won’t be charged twice if an earlier attempt already went through.'
+              : 'This booking isn’t confirmed yet. Complete the payment to lock it in — you won’t be charged twice if a previous attempt already went through.'}
+          </p>
+          <div className="mt-3 flex flex-col gap-2">
+            <PillButton loading={retrying} onClick={payNow}>{payFailed ? 'Retry payment' : 'Complete payment'}</PillButton>
+            <a href={`https://wa.me/${waNumber}?text=${encodeURIComponent(`Hi! I had trouble paying for booking #${order.id}`)}`}
+              target="_blank" rel="noreferrer"
+              className="flex min-h-[48px] items-center justify-center rounded-btn border-[1.5px] border-plum text-[14px] font-bold text-plum transition active:scale-[0.98]">💬 Get help on WhatsApp</a>
+          </div>
+        </div>
+      )}
+
+      {paid && (
         <div className="rounded-card border border-line bg-white p-4 shadow-card">
           <p className="mb-3 text-[15px] font-bold text-plum">Status</p>
           {STEPS.map((st, i) => (

@@ -11,12 +11,25 @@ type Filter = 'upcoming' | 'live' | 'past';
 const LIVE = ['on_the_way', 'in_progress', 'in_stay'];
 const PAST = ['delivered', 'cancelled', 'completed'];
 
-function StatusBadge({ status }: { status: string }) {
-  const label = STATUS_META[status]?.label ?? status;
-  const tone = LIVE.includes(status) ? 'bg-mint/50 text-ink'
-    : PAST.includes(status) ? 'bg-surface-alt text-muted'
-    : 'bg-plum-soft text-plum';
-  return <span className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-bold ${tone}`}>{label}</span>;
+// The honest chip for a booking, derived from the REAL payment_status + fulfilment status.
+// Only paid+ orders render as confirmed bookings; unpaid ones never claim to be booked.
+// Homes is request-only (no payment gate) so it keys purely off fulfilment status.
+function chipFor(b: any): { label: string; tone: string; retry?: boolean } {
+  if (b.status === 'cancelled') return { label: 'Cancelled', tone: 'bg-surface-alt text-muted' };
+  if (b.kind !== 'homes') {
+    if (b.payment_status === 'failed') return { label: 'Payment failed', tone: 'bg-danger/10 text-danger', retry: true };
+    if (b.payment_status !== 'paid') return { label: 'Payment incomplete', tone: 'bg-butter text-ink', retry: true };
+  }
+  switch (b.status) {
+    case 'unassigned': return { label: 'Confirmed', tone: 'bg-plum-soft text-plum' };
+    case 'assigned': return { label: 'Assigned', tone: 'bg-plum-soft text-plum' };
+    case 'on_the_way': return { label: 'On the way', tone: 'bg-mint/50 text-ink' };
+    case 'in_progress':
+    case 'in_stay': return { label: 'In progress', tone: 'bg-mint/50 text-ink' };
+    case 'delivered':
+    case 'completed': return { label: 'Completed', tone: 'bg-surface-alt text-muted' };
+    default: return { label: STATUS_META[b.status]?.label ?? b.status, tone: 'bg-plum-soft text-plum' };
+  }
 }
 
 function Bookings() {
@@ -64,14 +77,12 @@ function Bookings() {
           action={{ label: 'Explore services', onClick: () => router.push('/') }} />
       ) : (
         <div className="mp-fade mt-4 space-y-3">
-          {filtered.map(b => (
+          {filtered.map(b => { const c = chipFor(b); return (
             <Link key={`${b.kind}-${b.id}`} href={b.kind === 'homes' ? `/homes/booking/${b.id}` : `/track/${b.kind}/${b.id}`}
               className="block rounded-card border border-line bg-white p-4 shadow-card transition active:scale-[0.98]">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-[15px] font-bold text-ink">{b.kind === 'travel' ? '🚗 Travel' : b.kind === 'dermacare' ? '✨ Dermacare' : '🐱 Boarding'} · #{b.id}</span>
-                {b.kind !== 'homes' && b.payment_status !== 'paid' && b.status !== 'cancelled'
-                  ? <span className="shrink-0 rounded-full bg-butter px-3 py-1 text-[11px] font-bold text-ink">Payment pending</span>
-                  : <StatusBadge status={b.status} />}
+                <span className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-bold ${c.tone}`}>{c.label}</span>
               </div>
               <p className="mt-1 truncate text-[13px] text-muted">
                 {b.kind === 'travel' ? `${placeName(b.pickup_name, b.pickup_address)} → ${placeName(b.drop_name, b.drop_address)}`
@@ -82,11 +93,14 @@ function Bookings() {
                   : b.kind === 'dermacare' ? `${b.date_of_appointment} · ${b.time_of_appointment}`
                   : `${b.check_in} → ${b.check_out} · ${b.nights} night${b.nights === 1 ? '' : 's'}`} · {b.furbaby_name}
               </p>
+              {c.retry && (
+                <p className="mt-1 inline-flex items-center gap-1 text-[13px] font-bold text-plum">Tap to retry payment <Icons.ChevronRight className="h-3.5 w-3.5" /></p>
+              )}
               {b.kind !== 'homes' && LIVE.includes(b.status) && (
                 <p className="mt-1 inline-flex items-center gap-1 text-[13px] font-bold text-plum">Track live <Icons.ChevronRight className="h-3.5 w-3.5" /></p>
               )}
             </Link>
-          ))}
+          ); })}
         </div>
       )}
     </PageShell>
