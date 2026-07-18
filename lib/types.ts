@@ -3,7 +3,18 @@ export type Address = { id: string; label: string; address_text: string; lat: nu
 export type Therapy = { id: string; sort_order: number; name: string; branded_name: string; description: string | null; target_symptoms: string | null; price: number; duration_min: number; image_url: string | null; active: boolean };
 export type Service = { id: string; sort_order: number; name: string; tagline: string | null; description: string | null; includes: string[] | null; base_price: number; duration_min: number; popular: boolean; active: boolean };
 export type Addon = { id: string; sort_order: number; name: string; description: string | null; price: number; active: boolean };
+
+// Dermacare venue (CHANGE 1). 'salon' = customer comes to our MDC salon (address pinned to MDC);
+// 'home' = groomer comes to the customer's chosen address (existing behaviour).
+export type Venue = 'salon' | 'home';
+// Shape of app_config.mdc_salon — the fixed MDC location, editable in the DB in ONE place.
+export type MdcSalon = { name: string; address: string; lat: number; lng: number };
 export const rupees = (n: number | string) => `₹${Number(n).toLocaleString('en-IN')}`;
+
+// Customer-facing short location label. Prefers the stored place/POI name; for older orders
+// with only a full address, falls back to the first comma-segment so nothing looks broken.
+export const placeName = (name?: string | null, address?: string | null) =>
+  (name && name.trim()) || (address ? address.split(',')[0].trim() : '') || '';
 
 // Aggression 0–3 (ops-design skill). 0 calm · 1 nervous · 2 handle with care · 3 high risk.
 export const AGGRESSION_META = [

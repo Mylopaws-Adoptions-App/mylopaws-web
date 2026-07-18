@@ -33,7 +33,7 @@ export const SelectChip = ({
     type="button"
     onClick={onClick}
     aria-pressed={selected}
-    className={`min-h-[40px] rounded-full px-4 text-[14px] font-semibold transition-colors ${
+    className={`min-h-[40px] rounded-full px-4 text-[14px] font-semibold transition active:scale-95 ${
       selected ? 'bg-ink text-white' : 'border border-line bg-white text-body'
     }`}
   >
@@ -60,7 +60,7 @@ export const Segmented = ({
         key={o.value}
         type="button"
         onClick={() => onChange(o.value)}
-        className={`min-h-[40px] flex-1 rounded-full text-[14px] font-semibold transition-colors ${
+        className={`min-h-[40px] flex-1 rounded-full text-[14px] font-semibold transition active:scale-[0.97] ${
           value === o.value ? 'bg-plum text-white' : 'text-muted'
         }`}
       >

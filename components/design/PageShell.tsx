@@ -29,6 +29,7 @@ export function PageShell({
   children,
   headerClassName = '',
   sheetClassName = '',
+  contentKey,
 }: {
   variant?: 'mint' | 'plum';
   size?: 'large' | 'compact';
@@ -43,12 +44,19 @@ export function PageShell({
   children: React.ReactNode;
   headerClassName?: string;
   sheetClassName?: string;
+  /**
+   * When provided, the sheet content is keyed by this value and re-plays the
+   * `.mp-step` fade whenever it changes — used by multi-step flows (Travel) so
+   * moving between steps transitions instead of snapping. Purely presentational:
+   * it never scrolls or resets parent-held state.
+   */
+  contentKey?: React.Key;
 }) {
   const onColor = variant === 'plum' ? 'text-white' : 'text-ink';
   const headerBg = variant === 'plum' ? 'bg-plum' : 'bg-mint';
 
   return (
-    <div className={`relative mx-auto min-h-screen max-w-[480px] ${headerBg}`}>
+    <div className={`relative mx-auto min-h-screen max-w-[480px] overflow-x-clip ${headerBg}`}>
       <header className={`px-5 pt-[calc(1.5rem+env(safe-area-inset-top))] ${size === 'large' ? 'pb-8' : 'pb-6'} ${onColor} ${headerClassName}`}>
         {size === 'large' ? (
           <>
@@ -82,7 +90,7 @@ export function PageShell({
       </header>
 
       <main className={`-mt-4 min-h-[70vh] rounded-t-[24px] bg-white px-5 pt-7 ${footer ? 'pb-32' : 'pb-10'} ${sheetClassName}`}>
-        {children}
+        {contentKey !== undefined ? <div key={contentKey} className="mp-step">{children}</div> : children}
       </main>
 
       {footer && (

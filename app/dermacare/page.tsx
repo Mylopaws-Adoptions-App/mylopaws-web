@@ -2,10 +2,9 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import AuthGate from '@/components/AuthGate';
-import Nav from '@/components/Nav';
 import { supabase } from '@/lib/supabase';
 import { Service, rupees } from '@/lib/types';
-import { PageShell, PillButton, LoadingState, EmptyState, ErrorState, Icons, Photo } from '@/components/design';
+import { PageShell, EmptyState, ErrorState, SkeletonList, Icons, Photo } from '@/components/design';
 
 const DERMACARE_WA = '919148935441';
 
@@ -21,7 +20,7 @@ const TREATS = [
 function ServiceCard({ s, onBook }: { s: Service; onBook: () => void }) {
   return (
     <button onClick={onBook}
-      className={`w-full rounded-card border bg-white p-5 text-left shadow-card ${s.popular ? 'border-plum' : 'border-line'}`}>
+      className={`w-full rounded-card border bg-white p-5 text-left shadow-card transition active:scale-[0.98] ${s.popular ? 'border-plum' : 'border-line'}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           {s.popular && <span className="mb-1 inline-block rounded-full bg-butter px-2 py-0.5 text-[10px] font-bold text-plum">MOST BOOKED</span>}
@@ -73,11 +72,11 @@ function Catalog() {
       {error ? (
         <ErrorState onRetry={load} />
       ) : !rows ? (
-        <LoadingState label="Loading services…" />
+        <SkeletonList count={3} lines={3} />
       ) : rows.length === 0 ? (
         <EmptyState emoji="✨" title="No services available" sub="Please check back soon." />
       ) : (
-        <>
+        <div className="mp-fade">
           <div className="mt-4 space-y-3">
             {rows.map((s) => <ServiceCard key={s.id} s={s} onBook={() => router.push(`/dermacare/book?service=${s.id}`)} />)}
           </div>
@@ -101,13 +100,12 @@ function Catalog() {
 
           <a href={`https://wa.me/${DERMACARE_WA}?text=${encodeURIComponent('Hi! I have a question about Dermacare pricing for my pet.')}`}
             target="_blank" rel="noreferrer"
-            className="mt-4 flex min-h-[52px] items-center justify-center rounded-btn border-[1.5px] border-plum text-[15px] font-bold text-plum">
+            className="mt-4 flex min-h-[52px] items-center justify-center rounded-btn border-[1.5px] border-plum text-[15px] font-bold text-plum transition active:scale-[0.98]">
             Ask Vijay on WhatsApp 💬
           </a>
           <p className="mt-3 text-center text-[12px] text-muted">Final price is assessed per pet — size &amp; coat. Ask Vijay for a quote.</p>
-        </>
+        </div>
       )}
-      <Nav />
     </PageShell>
   );
 }

@@ -21,7 +21,7 @@ export function ModePill({
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className={`h-10 shrink-0 whitespace-nowrap rounded-full px-4 text-[14px] font-semibold transition-colors ${
+      className={`h-10 shrink-0 whitespace-nowrap rounded-full px-4 text-[14px] font-semibold transition active:scale-95 ${
         selected
           ? 'bg-ink text-white'
           : 'border-[1.5px] border-ink bg-white text-ink'

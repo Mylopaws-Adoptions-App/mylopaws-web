@@ -1,12 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
 import AuthGate, { useSession } from '@/components/AuthGate';
-import Nav from '@/components/Nav';
 import { supabase } from '@/lib/supabase';
 import { Pet, Address } from '@/lib/types';
 import PetPicker from '@/components/PetPicker';
 import PlaceInput, { PickedPlace } from '@/components/PlaceInput';
-import { PageShell, PillButton, Field } from '@/components/design';
+import { PageShell, PillButton, Field, Skeleton } from '@/components/design';
+import { toast } from '@/lib/toast';
 
 function Profile() {
   const { session } = useSession();
@@ -17,11 +17,12 @@ function Profile() {
   const [picked, setPicked] = useState<PickedPlace | null>(null);
   const [payments, setPayments] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState('');
+  const [loaded, setLoaded] = useState(false);
 
   const loadAll = () => {
     supabase.from('customers').select('*').eq('id', session!.user.id).single().then(({ data }) => {
       if (data) setF({ name: data.name ?? '', phone_number: data.phone_number ?? '', email: data.email ?? '', city: data.city ?? 'Bengaluru' });
+      setLoaded(true);
     });
     supabase.from('pets').select('*').eq('customer_id', session!.user.id).then(({ data }) => setPets((data as Pet[]) ?? []));
     supabase.from('addresses').select('*').eq('customer_id', session!.user.id).then(({ data }) => setAddresses((data as Address[]) ?? []));
@@ -32,12 +33,14 @@ function Profile() {
   const save = async () => {
     setSaving(true);
     const { error } = await supabase.from('customers').update(f).eq('id', session!.user.id);
-    setSaving(false); setMsg(error ? error.message : 'Saved! 🐾'); setTimeout(() => setMsg(''), 2500);
+    setSaving(false);
+    toast(error ? error.message : 'Profile saved 🐾', error ? 'error' : 'success');
   };
   const addAddress = async () => {
     if (!picked) return;
-    await supabase.from('addresses').insert({ customer_id: session!.user.id, label, address_text: picked.address, lat: picked.lat, lng: picked.lng });
+    const { error } = await supabase.from('addresses').insert({ customer_id: session!.user.id, label, address_text: picked.address, lat: picked.lat, lng: picked.lng });
     setPicked(null); setLabel('Home'); loadAll();
+    toast(error ? 'Could not save address' : 'Address saved 📍', error ? 'error' : 'success');
   };
 
   const Group = ({ title, children }: { title: string; children: React.ReactNode }) => (
@@ -47,17 +50,31 @@ function Profile() {
     </section>
   );
 
+  if (!loaded) {
+    return (
+      <PageShell variant="plum" size="large" title="Profile" sheetClassName="pb-28">
+        <div className="space-y-3" role="status" aria-live="polite" aria-busy="true">
+          <span className="sr-only">Loading your profile…</span>
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-[52px] w-full rounded-input" />
+          <Skeleton className="h-[52px] w-full rounded-input" />
+          <Skeleton className="h-[52px] w-full rounded-input" />
+          <Skeleton className="mt-6 h-5 w-40" />
+          <Skeleton className="h-16 w-full rounded-card" />
+          <Skeleton className="h-16 w-full rounded-card" />
+        </div>
+      </PageShell>
+    );
+  }
+
   return (
-    <PageShell variant="plum" size="large" title="Profile" sheetClassName="pb-28">
+    <PageShell variant="plum" size="large" title="Profile" sheetClassName="pb-28 mp-fade">
       <Group title="Your details">
         <Field label="Name" value={f.name} onChange={e => setF(s => ({ ...s, name: e.target.value }))} />
         <Field label="Phone (WhatsApp)" value={f.phone_number} onChange={e => setF(s => ({ ...s, phone_number: e.target.value }))} placeholder="+91…" inputMode="tel" />
         <Field label="Email" value={f.email} onChange={e => setF(s => ({ ...s, email: e.target.value }))} />
         <Field label="City" value={f.city} onChange={e => setF(s => ({ ...s, city: e.target.value }))} />
-        <div className="flex items-center gap-3">
-          <div className="w-40"><PillButton onClick={save} loading={saving}>Save changes</PillButton></div>
-          {msg && <span className="text-[13px] font-semibold text-success">{msg}</span>}
-        </div>
+        <div className="w-40"><PillButton onClick={save} loading={saving}>Save changes</PillButton></div>
       </Group>
 
       <Group title="My furbabies 🐾">
@@ -68,8 +85,8 @@ function Profile() {
                 <p className="font-bold text-ink">{p.name} {p.rescue ? '🏳️' : ''}</p>
                 <p className="text-[12px] text-muted">{[p.breed, p.age_years ? `${p.age_years} yrs` : null, p.aggressive ? '⚠️ can be aggressive' : null].filter(Boolean).join(' · ') || '—'}</p>
               </div>
-              <button onClick={async () => { await supabase.from('pets').delete().eq('id', p.id); loadAll(); }}
-                className="min-h-[44px] shrink-0 rounded-full px-3 text-[13px] font-bold text-danger">Remove</button>
+              <button onClick={async () => { await supabase.from('pets').delete().eq('id', p.id); loadAll(); toast(`${p.name} removed`, 'info'); }}
+                className="min-h-[44px] shrink-0 rounded-full px-3 text-[13px] font-bold text-danger transition active:scale-95">Remove</button>
             </div>
           ))}
         </div>
@@ -81,8 +98,8 @@ function Profile() {
           {addresses.map(a => (
             <div key={a.id} className="flex items-center justify-between rounded-card bg-surface-alt p-3">
               <div className="min-w-0"><p className="font-bold text-ink">{a.label}</p><p className="truncate text-[12px] text-muted">{a.address_text}</p></div>
-              <button onClick={async () => { await supabase.from('addresses').delete().eq('id', a.id); loadAll(); }}
-                className="min-h-[44px] shrink-0 rounded-full px-3 text-[13px] font-bold text-danger">Delete</button>
+              <button onClick={async () => { await supabase.from('addresses').delete().eq('id', a.id); loadAll(); toast('Address deleted', 'info'); }}
+                className="min-h-[44px] shrink-0 rounded-full px-3 text-[13px] font-bold text-danger transition active:scale-95">Delete</button>
             </div>
           ))}
         </div>
@@ -110,8 +127,6 @@ function Profile() {
         Log out
       </button>
       <p className="mt-6 text-center text-[12px] text-muted">Mylopaws · Bengaluru 🐾</p>
-
-      <Nav />
     </PageShell>
   );
 }

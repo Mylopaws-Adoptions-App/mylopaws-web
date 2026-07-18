@@ -21,7 +21,7 @@ export function TimeSlot({
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className={`flex h-12 items-center justify-center rounded-xl border text-[14px] transition-colors ${
+      className={`flex h-12 items-center justify-center rounded-xl border text-[14px] transition active:scale-95 ${
         selected
           ? 'border-plum bg-plum-tint font-bold text-plum'
           : 'border-line bg-white font-medium text-muted'

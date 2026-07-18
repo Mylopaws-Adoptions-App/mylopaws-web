@@ -3,10 +3,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import AuthGate, { useSession } from '@/components/AuthGate';
-import Nav from '@/components/Nav';
 import { supabase } from '@/lib/supabase';
-import { STATUS_META } from '@/lib/types';
-import { PageShell, Segmented, LoadingState, EmptyState, Icons } from '@/components/design';
+import { STATUS_META, placeName } from '@/lib/types';
+import { PageShell, Segmented, SkeletonList, EmptyState, Icons } from '@/components/design';
 
 type Filter = 'upcoming' | 'live' | 'past';
 const LIVE = ['on_the_way', 'in_progress', 'in_stay'];
@@ -58,22 +57,24 @@ function Bookings() {
         options={[{ value: 'upcoming', label: 'Upcoming' }, { value: 'live', label: 'Live' }, { value: 'past', label: 'Past' }]} />
 
       {!all ? (
-        <LoadingState label="Fetching your bookings…" />
+        <SkeletonList count={4} lines={2} />
       ) : filtered.length === 0 ? (
         <EmptyState photo="emptyWarm" title={filter === 'live' ? 'Nothing live right now' : 'No bookings here yet'}
           sub="Book pet travel, Dermacare, or cat boarding from Home."
           action={{ label: 'Explore services', onClick: () => router.push('/') }} />
       ) : (
-        <div className="mt-4 space-y-3">
+        <div className="mp-fade mt-4 space-y-3">
           {filtered.map(b => (
             <Link key={`${b.kind}-${b.id}`} href={b.kind === 'homes' ? `/homes/booking/${b.id}` : `/track/${b.kind}/${b.id}`}
-              className="block rounded-card border border-line bg-white p-4 shadow-card">
+              className="block rounded-card border border-line bg-white p-4 shadow-card transition active:scale-[0.98]">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-[15px] font-bold text-ink">{b.kind === 'travel' ? '🚗 Travel' : b.kind === 'dermacare' ? '✨ Dermacare' : '🐱 Boarding'} · #{b.id}</span>
-                <StatusBadge status={b.status} />
+                {b.kind !== 'homes' && b.payment_status !== 'paid' && b.status !== 'cancelled'
+                  ? <span className="shrink-0 rounded-full bg-butter px-3 py-1 text-[11px] font-bold text-ink">Payment pending</span>
+                  : <StatusBadge status={b.status} />}
               </div>
               <p className="mt-1 truncate text-[13px] text-muted">
-                {b.kind === 'travel' ? `${b.pickup_address?.split(',')[0]} → ${b.drop_address?.split(',')[0]}`
+                {b.kind === 'travel' ? `${placeName(b.pickup_name, b.pickup_address)} → ${placeName(b.drop_name, b.drop_address)}`
                   : b.kind === 'dermacare' ? (b.therapy_names ?? 'Therapy session') : b.provider}
               </p>
               <p className="mt-1 text-[13px] font-semibold text-body">
@@ -88,7 +89,6 @@ function Bookings() {
           ))}
         </div>
       )}
-      <Nav />
     </PageShell>
   );
 }

@@ -5,7 +5,12 @@
 // NOTE (flagged to owner): most originals are 3–13 MB. They are delivered through next/image, which
 // resizes + re-encodes to WebP/AVIF per device, so phones never download the full file — but the
 // originals should still be recompressed at source. The 4 glamour/bikini-named files are intentionally
-// omitted (not brand-appropriate). No pet-in-cab photo exists, so Travel keeps its gradient.
+// omitted (not brand-appropriate).
+//
+// TRAVEL IMAGE (CHANGE 3): "Air Travel.jpeg" (a pet resting calmly in transit) is used behind the
+// Pet Travel card, chosen for a genuinely travel-relevant, on-brand visual. CAVEAT flagged to owner:
+// it reads as *air* travel, whereas the product is intracity *cabs* — ideally upload a pet-in-a-car
+// shot and repoint `travelCard` here. ("Train Travel.jpeg" is the other in-transit option available.)
 
 const SUPABASE_URL = 'https://sbajixyhyyjpgkxrhltc.supabase.co';
 const BUCKET = 'Image Assets';
@@ -16,8 +21,9 @@ export const mediaUrl = (filename: string) =>
 
 // Semantic slots → source files. Change a value here to reskin a placement app-wide.
 export const MEDIA = {
+  brandLogo: 'Mylopaws Transparent Logo.png',
   loginHero: 'Pawfamily_Cute.jpeg',
-  travelCard: 'Dog walking shot.jpeg',
+  travelCard: 'Air Travel.jpeg',
   dermacareCard: 'A vet with a dog.jpeg',
   homesCard: 'A dog and a cat sleeping close to each other.jpeg',
   // Dermacare service tiles

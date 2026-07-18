@@ -2,7 +2,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthGate, { useSession } from '@/components/AuthGate';
-import Nav from '@/components/Nav';
 import PetPicker from '@/components/PetPicker';
 import { Btn, Card, Field } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
@@ -52,7 +51,7 @@ function Book() {
   };
 
   return (
-    <main className="mx-auto max-w-2xl px-5 py-8">
+    <main className="mx-auto max-w-2xl px-5 pt-8 pb-28">
       <h1 className="font-display text-3xl font-black">Request a Stay 🐱</h1>
       <p className="mt-1 text-sm text-ink-soft">{HOMES_PROVIDER} · we’ll confirm availability before any payment.</p>
 
@@ -92,4 +91,4 @@ function Book() {
     </main>
   );
 }
-export default function Page() { return <AuthGate><><Nav /><Book /></></AuthGate>; }
+export default function Page() { return <AuthGate><Book /></AuthGate>; }

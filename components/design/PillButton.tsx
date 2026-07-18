@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { ChevronRight } from './icons';
+import { ChevronRight, Spinner } from './icons';
 
 /**
  * Primary CTA button (SKILL section 5).
@@ -42,7 +42,7 @@ export function PillButton({
   const disabledCls = 'bg-[#DEDEDE] text-[#9A9A9A] border-transparent';
 
   const base =
-    'inline-flex items-center justify-center min-h-[54px] rounded-btn px-6 text-[16px] font-bold transition-colors active:scale-[0.99] disabled:pointer-events-none';
+    'inline-flex items-center justify-center gap-2 min-h-[54px] rounded-btn px-6 text-[16px] font-bold transition-transform active:scale-[0.98] disabled:pointer-events-none';
 
   return (
     <button
@@ -50,10 +50,13 @@ export function PillButton({
       onClick={onClick}
       disabled={isDisabled}
       aria-busy={loading || undefined}
-      className={`${base} ${fullWidth ? 'w-full' : ''} ${isDisabled ? disabledCls : variants[variant]} ${trailing ? 'justify-between' : ''} ${className}`}
+      className={`${base} ${fullWidth ? 'w-full' : ''} ${isDisabled ? disabledCls : variants[variant]} ${loading ? '!justify-center' : trailing ? 'justify-between' : ''} ${className}`}
     >
       {loading ? (
-        <span className="animate-pulse">•••</span>
+        <>
+          <Spinner className="h-[18px] w-[18px]" />
+          <span>{children}</span>
+        </>
       ) : trailing ? (
         <>
           <span>{children}</span>

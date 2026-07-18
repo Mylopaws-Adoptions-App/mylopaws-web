@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import AuthGate from '@/components/AuthGate';
-import Nav from '@/components/Nav';
 import { supabase } from '@/lib/supabase';
 import { Badge, Card, Spinner } from '@/components/ui';
 import { HomesOrder, HOMES_WHATSAPP, STATUS_META } from '@/lib/types';
@@ -34,7 +33,7 @@ function Booking() {
   const stepIdx = STEPS.indexOf(order.status);
 
   return (
-    <main className="mx-auto max-w-2xl px-5 py-8">
+    <main className="mx-auto max-w-2xl px-5 pt-8 pb-28">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-black">🐱 Boarding #{order.id}</h1>
         <Badge status={order.status} />
@@ -77,4 +76,4 @@ function Booking() {
     </main>
   );
 }
-export default function Page() { return <AuthGate><><Nav /><Booking /></></AuthGate>; }
+export default function Page() { return <AuthGate><Booking /></AuthGate>; }

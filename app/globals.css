@@ -42,6 +42,10 @@ gmp-place-autocomplete.mp-autocomplete::part(input):focus {
 .pac-item:hover { background: #F7F7F7; }
 :root { --font-display: 'Poppins'; --font-body: 'Poppins'; }
 
+/* Skeleton block base fill — static colour lives OUTSIDE the reduced-motion gate so a
+   skeleton is still visible (just not shimmering) for reduced-motion users. */
+.mp-skel { background: #ECECEC; border-radius: 10px; }
+
 /* ── Micro-interactions (Stage 5). All motion is gated behind prefers-reduced-motion. ── */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes mp-pop {
@@ -70,6 +74,27 @@ gmp-place-autocomplete.mp-autocomplete::part(input):focus {
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
     animation: mp-shimmer 1.4s infinite;
   }
+
+  /* ── Route & step transitions (issue 1). Fast (~200ms), no bounce. ── */
+  @keyframes mp-page-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .mp-page { animation: mp-page-in 0.2s ease both; }
+  @keyframes mp-step-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .mp-step { animation: mp-step-in 0.2s ease both; }
+
+  /* ── Content fade-in for data screens (issue 4): content should fade, not snap. ── */
+  @keyframes mp-fade-in { from { opacity: 0; } to { opacity: 1; } }
+  .mp-fade { animation: mp-fade-in 0.28s ease both; }
+
+  /* ── Bottom-sheet & search-overlay motion (issues 2 & 6). ── */
+  @keyframes mp-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+  .mp-backdrop-in { animation: mp-backdrop-in 0.2s ease both; }
+  .mp-backdrop-out { animation: mp-backdrop-in 0.2s ease reverse both; }
+  @keyframes mp-sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .mp-sheet-in { animation: mp-sheet-up 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .mp-sheet-out { animation: mp-sheet-up 0.2s ease reverse both; }
+  @keyframes mp-search-in { from { transform: translateY(2%); opacity: 0.4; } to { transform: translateY(0); opacity: 1; } }
+  .mp-search-in { animation: mp-search-in 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .mp-search-out { animation: mp-search-in 0.18s ease reverse both; }
 }
 
 /* Long-form legal/policy prose (Terms, Privacy, Cancellation). Readable, brand-consistent. */

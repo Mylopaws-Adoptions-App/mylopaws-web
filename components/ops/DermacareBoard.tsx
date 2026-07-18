@@ -31,7 +31,9 @@ export default function DermacareBoard() {
 
   const load = useCallback(async () => {
     setError(false);
+    // Payment gate: only paid bookings reach the groomer board (see razorpay-webhook).
     const { data, error } = await supabase.from('dermacare_orders').select('*')
+      .eq('payment_status', 'paid')
       .order('date_of_appointment', { ascending: true }).order('time_of_appointment', { ascending: true }).limit(300);
     if (error) { setError(true); return; }
     const rows = (data as Row[]) ?? [];

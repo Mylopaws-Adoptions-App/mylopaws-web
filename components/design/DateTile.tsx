@@ -25,7 +25,7 @@ export function DateTile({
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className={`flex h-[84px] w-[72px] shrink-0 flex-col items-center justify-center rounded-input border transition-colors ${
+      className={`flex h-[84px] w-[72px] shrink-0 flex-col items-center justify-center rounded-input border transition active:scale-95 ${
         selected
           ? 'border-plum bg-plum-tint text-plum'
           : 'border-line bg-white text-muted'

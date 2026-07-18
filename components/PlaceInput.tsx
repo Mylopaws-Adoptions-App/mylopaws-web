@@ -2,7 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import { loadMaps, importMapsLibrary } from '@/lib/maps';
 
-export type PickedPlace = { address: string; lat: number; lng: number };
+export type PickedPlace = { name: string; address: string; lat: number; lng: number };
 
 // Bengaluru bias + India-only, preserved from the legacy Autocomplete config.
 const BENGALURU_BIAS = { north: 13.2, south: 12.75, east: 77.85, west: 77.35 };
@@ -49,11 +49,17 @@ export default function PlaceInput({ label, placeholder, onPicked, bare, autoFoc
             const prediction = e?.placePrediction;
             if (!prediction) return;
             const place = prediction.toPlace();
-            await place.fetchFields({ fields: ['location', 'formattedAddress'] });
+            // displayName = the short POI/primary name Google shows on the first line
+            // (e.g. "Godrej 24 Sales Office"); we store it for clean customer-facing display.
+            await place.fetchFields({ fields: ['displayName', 'location', 'formattedAddress'] });
             const loc = place.location;
             if (!loc) return;
+            const address = place.formattedAddress ?? '';
+            const dn = place.displayName;
+            const name = (typeof dn === 'string' ? dn : dn?.text) || address.split(',')[0] || address;
             onPickedRef.current({
-              address: place.formattedAddress ?? '',
+              name,
+              address,
               lat: typeof loc.lat === 'function' ? loc.lat() : loc.lat,
               lng: typeof loc.lng === 'function' ? loc.lng() : loc.lng,
             });

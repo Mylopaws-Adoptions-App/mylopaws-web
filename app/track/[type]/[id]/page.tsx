@@ -4,9 +4,9 @@ import { useParams, useRouter } from 'next/navigation';
 import AuthGate, { useSession } from '@/components/AuthGate';
 import { supabase } from '@/lib/supabase';
 import { loadMaps } from '@/lib/maps';
-import { payForOrder } from '@/lib/razorpay';
-import { STATUS_META } from '@/lib/types';
-import { PageShell, PillButton, LoadingState, ErrorState } from '@/components/design';
+import { payForOrder, confirmPaid } from '@/lib/razorpay';
+import { STATUS_META, placeName } from '@/lib/types';
+import { PageShell, PillButton, Skeleton, ErrorState } from '@/components/design';
 
 const STEPS = ['unassigned', 'assigned', 'on_the_way', 'in_progress', 'delivered'];
 
@@ -20,6 +20,7 @@ function Track() {
   const [supplier, setSupplier] = useState<any | null>(null);
   const [loc, setLoc] = useState<any | null>(null);
   const [payment, setPayment] = useState<any | null>(null);
+  const [retrying, setRetrying] = useState(false);
   const mapDiv = useRef<HTMLDivElement>(null);
   const mapObjs = useRef<{ map?: any; sup?: any; dest?: any }>({});
 
@@ -78,14 +79,34 @@ function Track() {
   };
 
   if (notFound) return <PageShell variant="plum" size="compact" title="Booking" onBack={() => router.push('/bookings')}><ErrorState title="Booking not found" sub="We couldn’t load this booking." onRetry={() => { setNotFound(false); load(); }} /></PageShell>;
-  if (!order) return <PageShell variant="plum" size="compact" title="Booking" onBack={() => router.push('/bookings')}><LoadingState label="Loading booking…" /></PageShell>;
+  if (!order) return (
+    <PageShell variant="plum" size="compact" title="Booking" onBack={() => router.push('/bookings')}>
+      <div className="space-y-3" role="status" aria-live="polite" aria-busy="true">
+        <span className="sr-only">Loading booking…</span>
+        <Skeleton className="h-40 w-full rounded-card" />
+        <Skeleton className="h-28 w-full rounded-card" />
+        <Skeleton className="h-24 w-full rounded-card" />
+      </div>
+    </PageShell>
+  );
 
   const stale = loc ? Date.now() - new Date(loc.updated_at).getTime() > 90_000 : false;
   const stepIdx = STEPS.indexOf(order.status);
+  // An order is only really "booked" once payment is verified server-side. Until then we show a
+  // pending-payment state, not the normal status ladder / "Finding partner".
+  const unpaid = order.payment_status !== 'paid' && order.status !== 'cancelled';
+
+  const payNow = () => {
+    setRetrying(true);
+    payForOrder(type, Number(id), { email: session?.user.email ?? undefined })
+      .then(o => (o === 'captured' ? confirmPaid(type, Number(id)) : null))
+      .then(load)
+      .finally(() => setRetrying(false));
+  };
 
   return (
     <PageShell variant="plum" size="compact" title={`${type === 'travel' ? '🚗' : '✨'} Booking #${order.id}`}
-      onBack={() => router.push('/bookings')} rightAction={badge(order.status)} sheetClassName="pb-10">
+      onBack={() => router.push('/bookings')} rightAction={badge(order.status)} sheetClassName="pb-10 mp-fade">
       {live && (
         <div className="relative -mt-2 mb-4 h-64 overflow-hidden rounded-card border border-line">
           <div ref={mapDiv} className="h-full w-full" />
@@ -99,44 +120,51 @@ function Track() {
         <div className="mb-4 rounded-card border border-danger/30 bg-danger/5 p-4"><p className="font-bold text-danger">Cancelled{order.cancel_reason ? `: ${order.cancel_reason}` : ''}</p></div>
       )}
 
-      <div className="rounded-card border border-line bg-white p-4 shadow-card">
-        <p className="mb-3 text-[15px] font-bold text-plum">Status</p>
-        {STEPS.map((st, i) => (
-          <div key={st} className="mb-2 flex items-center gap-3 last:mb-0">
-            <span className={`h-3 w-3 rounded-full ${i <= stepIdx && stepIdx >= 0 ? 'bg-plum' : 'bg-line'}`} />
-            <span className={`text-[14px] ${i <= stepIdx ? 'font-bold text-ink' : 'text-muted'}`}>{STATUS_META[st].label}</span>
-          </div>
-        ))}
-      </div>
+      {unpaid && (
+        <div className="mb-4 rounded-card bg-butter p-4">
+          <p className="text-[15px] font-bold text-ink">Payment pending</p>
+          <p className="mt-1 text-[13px] leading-[1.5] text-body">This booking isn’t confirmed yet — complete the payment to lock it in. You won’t be charged twice if a previous attempt already went through.</p>
+          <div className="mt-3"><PillButton loading={retrying} onClick={payNow}>Complete payment</PillButton></div>
+        </div>
+      )}
+
+      {!unpaid && (
+        <div className="rounded-card border border-line bg-white p-4 shadow-card">
+          <p className="mb-3 text-[15px] font-bold text-plum">Status</p>
+          {STEPS.map((st, i) => (
+            <div key={st} className="mb-2 flex items-center gap-3 last:mb-0">
+              <span className={`h-3 w-3 rounded-full ${i <= stepIdx && stepIdx >= 0 ? 'bg-plum' : 'bg-line'}`} />
+              <span className={`text-[14px] ${i <= stepIdx ? 'font-bold text-ink' : 'text-muted'}`}>{STATUS_META[st].label}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {supplier && (
         <div className="mt-3 rounded-card border border-line bg-white p-4 shadow-card">
           <p className="mb-1 text-[13px] font-bold text-plum">Your Mylopaws partner</p>
           <p className="text-[16px] font-bold text-ink">{supplier.name}{supplier.vehicle_type ? ` · ${supplier.vehicle_type}` : ''}</p>
-          <a href={`tel:${supplier.phone_number}`} className="mt-3 flex min-h-[52px] items-center justify-center rounded-btn bg-plum text-[15px] font-bold text-white">📞 Call {supplier.name.split(' ')[0]}</a>
+          <a href={`tel:${supplier.phone_number}`} className="mt-3 flex min-h-[52px] items-center justify-center rounded-btn bg-plum text-[15px] font-bold text-white transition active:scale-[0.98]">📞 Call {supplier.name.split(' ')[0]}</a>
         </div>
       )}
 
       <div className="mt-3 space-y-1.5 rounded-card border border-line bg-white p-4 text-[15px] shadow-card">
         <p className="mb-1 text-[13px] font-bold text-plum">Details</p>
         {type === 'travel' ? (<>
-          <p className="text-body">📍 {order.pickup_address}</p><p className="text-body">🏁 {order.drop_address}</p>
+          <p className="text-body">📍 {placeName(order.pickup_name, order.pickup_address)}</p><p className="text-body">🏁 {placeName(order.drop_name, order.drop_address)}</p>
           <p className="text-body">🗓 {order.date_of_travel} · {order.time_of_travel}</p><p className="text-body">🐾 {order.furbaby_name}</p>
           {order.fare_estimate && <p className="text-body">💰 Est. fare ₹{order.fare_estimate} (₹{order.booking_fee} booking fee)</p>}
         </>) : (<>
-          <p className="text-body">✨ {order.therapy_names}</p><p className="text-body">🏠 {order.address_text}</p>
+          <p className="text-body">✨ {order.therapy_names}</p><p className="text-body">🏠 {placeName(order.address_name, order.address_text)}</p>
           <p className="text-body">🗓 {order.date_of_appointment} · {order.time_of_appointment}</p><p className="text-body">🐾 {order.furbaby_name}</p>
           {order.total_amount && <p className="text-body">💰 ₹{order.total_amount}</p>}
         </>)}
         {payment && <p className={`font-semibold ${payment.status === 'paid' ? 'text-success' : payment.status === 'failed' ? 'text-danger' : 'text-muted'}`}>💳 Payment: {payment.status.toUpperCase()}</p>}
       </div>
 
-      {payment && payment.status !== 'paid' && order.status !== 'cancelled' && (
-        <div className="mt-4"><PillButton onClick={() => payForOrder(type, Number(id), { email: session?.user.email ?? undefined }).then(load)}>Retry payment</PillButton></div>
-      )}
       <a href={`https://wa.me/${type === 'travel' ? '919036608453' : '919148935441'}?text=${encodeURIComponent(`Hi! About my booking #${order.id}`)}`}
         target="_blank" rel="noreferrer"
-        className="mt-3 flex min-h-[52px] items-center justify-center rounded-btn border-[1.5px] border-plum text-[15px] font-bold text-plum">
+        className="mt-3 flex min-h-[52px] items-center justify-center rounded-btn border-[1.5px] border-plum text-[15px] font-bold text-plum transition active:scale-[0.98]">
         💬 Chat with us on WhatsApp
       </a>
     </PageShell>

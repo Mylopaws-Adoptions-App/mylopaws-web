@@ -41,9 +41,28 @@ export const Check = (p: IconProps) => (
   <svg {...base(p)}><path d="M20 6L9 17l-5-5" /></svg>
 );
 
+export const Close = (p: IconProps) => (
+  <svg {...base(p)}><path d="M18 6L6 18M6 6l12 12" /></svg>
+);
+
+// Left-aligned magnifier for search overlays.
+export const Search = (p: IconProps) => (
+  <svg {...base(p)}><circle cx="11" cy="11" r="7" /><path d="M21 21l-3.5-3.5" /></svg>
+);
+
 // Small hollow circle used as the "pickup" marker.
 export const PickupDot = (p: IconProps) => (
   <svg {...base({ strokeWidth: 2.5, ...p })}><circle cx="12" cy="12" r="6" /></svg>
+);
+
+// Spinning loader — used for in-flight CTAs (Razorpay order creation, saves).
+// A loading spinner is an intentional, functional progress indicator, so it keeps
+// turning; the button is also disabled + relabelled, giving reduced-motion users
+// non-animated confirmation that the tap registered.
+export const Spinner = (p: IconProps) => (
+  <svg {...base({ strokeWidth: 2.5, ...p })} className={`animate-spin ${p.className ?? ''}`}>
+    <path d="M12 3a9 9 0 1 0 9 9" opacity="0.9" />
+  </svg>
 );
 
 // Map pin used as the "drop" marker.

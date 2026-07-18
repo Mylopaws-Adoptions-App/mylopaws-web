@@ -19,6 +19,41 @@ export function LoadingState({ label = 'Loading…' }: { label?: string }) {
   );
 }
 
+/**
+ * Skeleton primitives (issue 4). Data screens should show a shape-matched
+ * placeholder that shimmers, then fade the real content in — never a bare spinner
+ * or blank flash. `.mp-skel` gives the static grey fill (visible under
+ * reduced-motion); `.mp-skeleton` adds the shimmer sweep (gated in globals.css).
+ */
+export function Skeleton({ className = '' }: { className?: string }) {
+  return <div className={`mp-skel mp-skeleton ${className}`} aria-hidden />;
+}
+
+/** A card-shaped skeleton row (booking list, service card, detail card). */
+export function SkeletonCard({ lines = 2 }: { lines?: number }) {
+  return (
+    <div className="rounded-card border border-line bg-white p-4 shadow-card">
+      <div className="flex items-center justify-between gap-3">
+        <Skeleton className="h-4 w-1/3" />
+        <Skeleton className="h-5 w-16 rounded-full" />
+      </div>
+      {Array.from({ length: lines }).map((_, i) => (
+        <Skeleton key={i} className={`mt-3 h-3 ${i === 0 ? 'w-3/4' : 'w-1/2'}`} />
+      ))}
+    </div>
+  );
+}
+
+/** A vertical stack of `count` card skeletons, wrapped in a polite live region. */
+export function SkeletonList({ count = 3, lines = 2 }: { count?: number; lines?: number }) {
+  return (
+    <div className="mt-4 space-y-3" role="status" aria-live="polite" aria-busy="true">
+      <span className="sr-only">Loading…</span>
+      {Array.from({ length: count }).map((_, i) => <SkeletonCard key={i} lines={lines} />)}
+    </div>
+  );
+}
+
 export function EmptyState({
   emoji = '🐾',
   photo,

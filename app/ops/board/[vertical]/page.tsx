@@ -57,7 +57,9 @@ function TravelBoard() {
   const [reason, setReason] = useState('');
 
   const load = useCallback(async () => {
-    let q = supabase.from(table).select('*').order('created_at', { ascending: false }).limit(200);
+    // Payment gate: only ops-visible once the Razorpay webhook has verified payment
+    // (payment_status='paid'). pending_payment / failed / abandoned never reach the board.
+    let q = supabase.from(table).select('*').eq('payment_status', 'paid').order('created_at', { ascending: false }).limit(200);
     if (!isAdmin && me) q = q.eq('supplier_assigned', me.id);
     const [{ data: o }, { data: s }] = await Promise.all([
       q, supabase.from('staff').select('*').eq('role', 'supplier').eq('active', true),

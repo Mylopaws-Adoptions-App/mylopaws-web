@@ -2,9 +2,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import AuthGate, { useSession } from '@/components/AuthGate';
-import Nav from '@/components/Nav';
 import { supabase } from '@/lib/supabase';
-import { Icons, PhotoBg, Photo } from '@/components/design';
+import { Icons, PhotoBg, Photo, Logo } from '@/components/design';
 
 const AGAIN: Record<string, { href: string; label: string }> = {
   travel: { href: '/travel', label: 'Book another ride 🚗' },
@@ -41,6 +40,7 @@ function Home() {
 
   return (
     <div className="mx-auto min-h-screen max-w-[480px] bg-white px-5 pb-28 pt-[calc(2rem+env(safe-area-inset-top))]">
+      <Logo boxClassName="h-9 w-28 mb-4" priority />
       <h1 className="text-[32px] font-extrabold tracking-[-0.5px] text-ink">{again ? 'Welcome back' : 'Hi'} {name || 'there'} 👋</h1>
       <p className="mt-1 text-[15px] text-body">What does your furbaby need today?</p>
 
@@ -53,7 +53,7 @@ function Home() {
       )}
 
       <div className="mt-7 space-y-4">
-        <Link href="/travel" className="relative block overflow-hidden rounded-card bg-plum p-6 text-white shadow-card">
+        <Link href="/travel" className="relative block overflow-hidden rounded-card bg-plum p-6 text-white shadow-card transition active:scale-[0.98]">
           <PhotoBg srcKey="travelCard" alt="A dog out on a walk" priority
             overlay="from-plum via-plum/85 to-plum/45" />
           <div className="relative z-10">
@@ -64,7 +64,7 @@ function Home() {
           </div>
         </Link>
 
-        <Link href="/dermacare" className="relative block overflow-hidden rounded-card bg-plum-dark p-6 text-white shadow-card">
+        <Link href="/dermacare" className="relative block overflow-hidden rounded-card bg-plum-dark p-6 text-white shadow-card transition active:scale-[0.98]">
           <PhotoBg srcKey="dermacareCard" alt="A vet caring for a dog"
             overlay="from-black/80 via-black/45 to-black/10" />
           <div className="relative z-10">
@@ -75,7 +75,7 @@ function Home() {
           </div>
         </Link>
 
-        <Link href="/homes" className="flex items-center gap-4 rounded-card border border-line bg-white p-5 shadow-card">
+        <Link href="/homes" className="flex items-center gap-4 rounded-card border border-line bg-white p-5 shadow-card transition active:scale-[0.98]">
           <Photo srcKey="homesCard" alt="A cat and dog resting together" rounded="rounded-xl"
             className="h-16 w-16 shrink-0" sizes="64px" />
           <div className="min-w-0 flex-1">
@@ -92,8 +92,6 @@ function Home() {
         className="mt-6 flex min-h-[48px] items-center justify-center gap-2 text-[15px] font-semibold text-body">
         💬 Chat with us on WhatsApp
       </a>
-
-      <Nav />
     </div>
   );
 }

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { PillButton, Photo, Field } from '@/components/design';
+import { PillButton, Photo, Field, Logo } from '@/components/design';
 
 export default function Login() {
   const [busy, setBusy] = useState(false);
@@ -39,6 +39,7 @@ export default function Login() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-[480px] flex-col bg-white px-5 pb-4 pt-[calc(4rem+env(safe-area-inset-top))]">
+      <Logo boxClassName="h-16 w-44 mb-5" priority />
       <h1 className="text-[32px] font-extrabold tracking-[-0.5px] text-ink">Sign In</h1>
       <p className="mt-2 text-[15px] leading-[1.5] text-body">Pet travel &amp; dermacare, made effortless.</p>
 

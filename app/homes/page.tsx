@@ -1,7 +1,6 @@
 'use client';
 import Link from 'next/link';
 import AuthGate from '@/components/AuthGate';
-import Nav from '@/components/Nav';
 import { Btn, Card } from '@/components/ui';
 import { PhotoBg } from '@/components/design';
 import { HOMES_PROVIDER, HOMES_RATE_PER_NIGHT } from '@/lib/types';
@@ -18,7 +17,7 @@ const HIGHLIGHTS = [
 
 function Homes() {
   return (
-    <main className="mx-auto max-w-3xl px-5 py-8">
+    <main className="mx-auto max-w-3xl px-5 pt-8 pb-28">
       <Link href="/" className="text-sm font-bold text-ink-soft hover:text-magenta">← Home</Link>
 
       <div className="relative mt-3 min-h-[220px] overflow-hidden rounded-3xl bg-night p-7 text-white">
@@ -74,4 +73,4 @@ function Homes() {
     </main>
   );
 }
-export default function Page() { return <AuthGate><><Nav /><Homes /></></AuthGate>; }
+export default function Page() { return <AuthGate><Homes /></AuthGate>; }

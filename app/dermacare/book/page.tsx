@@ -5,8 +5,9 @@ import AuthGate, { useSession } from '@/components/AuthGate';
 import PlaceInput, { PickedPlace } from '@/components/PlaceInput';
 import PetPicker from '@/components/PetPicker';
 import { supabase } from '@/lib/supabase';
-import { payForOrder } from '@/lib/razorpay';
-import { Address, Pet, Service, Addon, mapsLink, rupees } from '@/lib/types';
+import { payForOrder, confirmPaid } from '@/lib/razorpay';
+import { toast } from '@/lib/toast';
+import { Address, Pet, Service, Addon, mapsLink, rupees, placeName } from '@/lib/types';
 import { PageShell, PillButton, SelectChip, Field, LoadingState, ErrorState, Icons } from '@/components/design';
 
 const SLOTS = ['11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
@@ -65,7 +66,7 @@ function BookInner() {
       const { data: order, error } = await supabase.from('dermacare_orders').insert({
         customer_id: session!.user.id, pet_id: pet.id,
         pawparent_name: cust?.name ?? 'Pawparent', furbaby_name: pet.name, phone_number: phone.trim(),
-        address_text: addr.address, lat: addr.lat, lng: addr.lng, address_maps_link: mapsLink(addr.lat, addr.lng),
+        address_text: addr.address, lat: addr.lat, lng: addr.lng, address_maps_link: mapsLink(addr.lat, addr.lng), address_name: addr.name,
         date_of_appointment: date, time_of_appointment: slot,
         breed: pet.breed, aggressive: pet.aggressive,
         pets_count: petsCount, therapy_names: therapyNames,
@@ -79,9 +80,28 @@ function BookInner() {
       ];
       const { error: itemsErr } = await supabase.from('dermacare_order_items').insert(items);
       if (itemsErr) throw itemsErr;
-      await payForOrder('dermacare', order.id, { name: cust?.name ?? undefined, email: cust?.email ?? undefined, contact: phone.trim() });
-      router.push(`/track/dermacare/${order.id}`);
-    } catch (e: any) { setErr(e.message ?? 'Booking failed.'); }
+      const outcome = await payForOrder('dermacare', order.id, { name: cust?.name ?? undefined, email: cust?.email ?? undefined, contact: phone.trim() });
+      if (outcome === 'dismissed') {
+        setErr('Payment not completed. Tap “Pay & book” to try again.');
+        toast('Payment not completed — you can try again.', 'info');
+        return;
+      }
+      // Verify server-side (webhook) before treating the booking as confirmed.
+      const result = await confirmPaid('dermacare', order.id);
+      if (result === 'paid') {
+        toast('Booking confirmed ✨', 'success');
+        router.push(`/track/dermacare/${order.id}`);
+      } else if (result === 'failed') {
+        setErr('Payment failed. Tap “Pay & book” to try again.');
+        toast('Payment failed — please try again.', 'error');
+      } else {
+        setErr('Payment received — we’re confirming your booking. It’ll appear in My Bookings shortly.');
+        toast('Confirming your payment…', 'info');
+      }
+    } catch (e: any) {
+      setErr(e.message ?? 'Booking failed.');
+      toast(e.message ?? 'Booking failed.', 'error');
+    }
     finally { setBusy(false); }
   };
 
@@ -97,14 +117,14 @@ function BookInner() {
   // ── Step 1: choose service ───────────────────────────────────────────────
   if (step === 1) {
     return (
-      <PageShell variant="plum" size="large" title="Choose a service" subtitle="Full Service is our most-booked" onBack={onBack}
+      <PageShell variant="plum" size="large" title="Choose a service" subtitle="Full Service is our most-booked" onBack={onBack} contentKey={step}
         footer={<PillButton onClick={() => setStep(2)}>Next</PillButton>}>
         <div className="space-y-3">
           {services.map(s => {
             const sel = service.id === s.id;
             return (
               <button key={s.id} onClick={() => setService(s)}
-                className={`w-full rounded-card border p-4 text-left ${sel ? 'border-plum bg-plum-soft' : 'border-line bg-white shadow-card'}`}>
+                className={`w-full rounded-card border p-4 text-left transition active:scale-[0.98] ${sel ? 'border-plum bg-plum-soft' : 'border-line bg-white shadow-card'}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     {s.popular && <span className="mb-1 inline-block rounded-full bg-butter px-2 py-0.5 text-[10px] font-bold text-plum">MOST BOOKED</span>}
@@ -133,14 +153,14 @@ function BookInner() {
   // ── Step 2: add-ons ──────────────────────────────────────────────────────
   if (step === 2) {
     return (
-      <PageShell variant="plum" size="large" title="Add-ons" subtitle="Optional extras for your pet" onBack={onBack}
+      <PageShell variant="plum" size="large" title="Add-ons" subtitle="Optional extras for your pet" onBack={onBack} contentKey={step}
         footer={<><EstBar /><PillButton onClick={() => setStep(3)}>Next</PillButton></>}>
         <div className="space-y-3">
           {addons.map(a => {
             const sel = chosen.has(a.id);
             return (
               <button key={a.id} onClick={() => toggle(a.id)}
-                className={`flex w-full items-start gap-3 rounded-card border p-4 text-left ${sel ? 'border-plum bg-plum-soft' : 'border-line bg-white shadow-card'}`}>
+                className={`flex w-full items-start gap-3 rounded-card border p-4 text-left transition active:scale-[0.98] ${sel ? 'border-plum bg-plum-soft' : 'border-line bg-white shadow-card'}`}>
                 <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border ${sel ? 'border-plum bg-plum text-white' : 'border-line bg-white'}`}>
                   {sel && <Icons.Check className="h-3.5 w-3.5" />}
                 </span>
@@ -163,7 +183,7 @@ function BookInner() {
   // ── Step 3: pets ─────────────────────────────────────────────────────────
   if (step === 3) {
     return (
-      <PageShell variant="plum" size="large" title="Your pets" subtitle="Pricing scales per pet" onBack={onBack}
+      <PageShell variant="plum" size="large" title="Your pets" subtitle="Pricing scales per pet" onBack={onBack} contentKey={step}
         footer={<><EstBar /><PillButton disabled={!pet} onClick={() => setStep(4)}>Next</PillButton></>}>
         <h2 className="text-[17px] font-bold text-ink">How many pets?</h2>
         <div className="mt-3 flex items-center gap-4">
@@ -185,17 +205,17 @@ function BookInner() {
   if (step === 4) {
     const ready = !!(addr && date && slot && phone.trim().length >= 10);
     return (
-      <PageShell variant="plum" size="large" title="Where & when" subtitle="Mon–Sat, 11 AM – 6 PM" onBack={onBack}
+      <PageShell variant="plum" size="large" title="Where & when" subtitle="Mon–Sat, 11 AM – 6 PM" onBack={onBack} contentKey={step}
         footer={<><EstBar /><PillButton disabled={!ready} onClick={() => setStep(5)}>Review</PillButton></>}>
         <h2 className="text-[17px] font-bold text-ink">Address</h2>
         {saved.length > 0 && (
           <div className="mb-3 mt-3 flex flex-wrap gap-2">
             {saved.map(a => <SelectChip key={a.id} label={a.label} selected={addr?.address === a.address_text}
-              onClick={() => setAddr({ address: a.address_text, lat: a.lat ?? 0, lng: a.lng ?? 0 })} />)}
+              onClick={() => setAddr({ name: a.label, address: a.address_text, lat: a.lat ?? 0, lng: a.lng ?? 0 })} />)}
           </div>
         )}
         <div className="mt-3"><PlaceInput label="Or search an address" placeholder="Search address…" onPicked={setAddr} /></div>
-        {addr && <p className="text-[13px] font-medium text-success">✓ {addr.address}</p>}
+        {addr && <p className="text-[13px] font-medium text-success">✓ {placeName(addr.name, addr.address)}</p>}
 
         <h2 className="mt-7 text-[17px] font-bold text-ink">Date &amp; time</h2>
         <div className="mt-3"><Field type="date" value={date} min={new Date().toISOString().slice(0, 10)} onChange={e => setDate(e.target.value)} /></div>
@@ -209,7 +229,7 @@ function BookInner() {
 
   // ── Step 5: review ───────────────────────────────────────────────────────
   return (
-    <PageShell variant="plum" size="large" title="Review" subtitle="Check your booking" onBack={onBack}
+    <PageShell variant="plum" size="large" title="Review" subtitle="Check your booking" onBack={onBack} contentKey={step}
       footer={<PillButton trailing={rupees(estTotal)} loading={busy} onClick={book}>Pay &amp; book</PillButton>}>
       <div className="rounded-card border border-line bg-white p-4 shadow-card">
         <div className="flex justify-between text-[15px]">
@@ -227,7 +247,7 @@ function BookInner() {
 
       <div className="mt-4 space-y-1 text-[14px] text-body">
         <p>🐾 {pet?.name}{petsCount > 1 ? ` +${petsCount - 1}` : ''}</p>
-        <p>🏠 {addr?.address}</p>
+        <p>🏠 {addr ? placeName(addr.name, addr.address) : ''}</p>
         <p>🗓 {date} · {slot && to12(slot)}</p>
       </div>
 

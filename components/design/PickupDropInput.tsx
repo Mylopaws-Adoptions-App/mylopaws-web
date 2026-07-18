@@ -47,7 +47,7 @@ export function PickupDropInput({
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-[52px] w-full items-center gap-3 px-3 text-left"
+      className="flex min-h-[52px] w-full items-center gap-3 rounded-input px-3 text-left transition active:bg-surface-alt active:scale-[0.99]"
     >
       <span className={`flex h-6 w-6 shrink-0 items-center justify-center ${iconColor}`}>{icon}</span>
       <span className={`truncate text-[15px] ${value ? 'text-ink' : 'text-muted'}`}>
@@ -74,7 +74,7 @@ export function PickupDropInput({
           type="button"
           onClick={onAddStop}
           aria-label="Add a stop"
-          className="mt-4 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-plum-soft text-plum"
+          className="mt-4 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-plum-soft text-plum transition active:scale-95"
         >
           <Plus className="h-5 w-5" />
         </button>

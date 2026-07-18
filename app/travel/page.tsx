@@ -10,8 +10,9 @@ import {
 } from '@/components/design';
 import { supabase, getConfig } from '@/lib/supabase';
 import { importMapsLibrary, getMapsAuthError, MapsKeyMissingError } from '@/lib/maps';
-import { payForOrder } from '@/lib/razorpay';
-import { Pet, computeFare, mapsLink } from '@/lib/types';
+import { payForOrder, confirmPaid } from '@/lib/razorpay';
+import { toast } from '@/lib/toast';
+import { Pet, computeFare, mapsLink, placeName } from '@/lib/types';
 
 const MODES = ['Intracity', 'Out Station', 'Train', 'Airline'];
 const DAY_ABBR = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
@@ -33,6 +34,7 @@ function Travel() {
   const router = useRouter();
   const mapDiv = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
+  const mapNode = useRef<HTMLDivElement | null>(null); // the DOM node the map is bound to
   const rendererRef = useRef<any>(null);
   const dirResult = useRef<any>(null);
 
@@ -88,14 +90,19 @@ function Travel() {
   }, [pickup, drop]);
 
   // Init the ride map only when its screen is visible; draw the route with DirectionsRenderer.
+  // Stepping away from step 3 unmounts the map node, so on return we must re-bind to the NEW
+  // node (mapNode tracks which node the instance is attached to). The saved route (dirResult)
+  // is redrawn immediately, so going back-and-forward never leaves a blank map or loses the trip.
   useEffect(() => {
-    if (step !== 3 || !mapDiv.current || mapRef.current) return;
+    if (step !== 3 || !mapDiv.current) return;
+    if (mapRef.current && mapNode.current === mapDiv.current) return; // already bound to this node
     (async () => {
       try {
         const { Map } = await importMapsLibrary<any>('maps');
         const routesLib: any = await importMapsLibrary('routes');
         setMapErr(null);
         mapRef.current = new Map(mapDiv.current!, { center: { lat: 12.9716, lng: 77.5946 }, zoom: 11, disableDefaultUI: true, zoomControl: true });
+        mapNode.current = mapDiv.current;
         rendererRef.current = new routesLib.DirectionsRenderer({ map: mapRef.current, polylineOptions: { strokeColor: '#6B1A47', strokeWeight: 4 } });
         if (dirResult.current) rendererRef.current.setDirections(dirResult.current);
         // gm_authFailure fires slightly after load; re-check for an auth/referrer/billing error.
@@ -133,8 +140,8 @@ function Travel() {
       const { data: order, error } = await supabase.from('orders').insert({
         customer_id: session!.user.id, pet_id: pet.id,
         pawparent_name: cust?.name ?? 'Pawparent', furbaby_name: pet.name, phone_number: phone.trim(),
-        pickup_address: pickup.address, pickup_lat: pickup.lat, pickup_lng: pickup.lng,
-        drop_address: drop.address, drop_lat: drop.lat, drop_lng: drop.lng,
+        pickup_address: pickup.address, pickup_lat: pickup.lat, pickup_lng: pickup.lng, pickup_name: pickup.name,
+        drop_address: drop.address, drop_lat: drop.lat, drop_lng: drop.lng, drop_name: drop.name,
         pickup_maps_link: mapsLink(pickup.lat, pickup.lng), drop_maps_link: mapsLink(drop.lat, drop.lng),
         distance_km: Math.round(route.km * 10) / 10, duration_min: route.min,
         fare_estimate: fare, booking_fee: bookingFee,
@@ -142,20 +149,35 @@ function Travel() {
         breed: pet.breed, aggressive: pet.aggressive, rescue: pet.rescue, critical: !!pet.critical_notes,
       }).select('id').single();
       if (error) throw error;
-      const paid = await payForOrder('travel', order.id, { name: cust?.name ?? undefined, email: cust?.email ?? undefined, contact: phone.trim() });
-      if (paid) {
-        setDone({ id: order.id, total: fare, paid: bookingFee, balance, date: prettyDate(dateISO), time: to12(Number(time.slice(0, 2)), Number(time.slice(3))) });
-      } else {
+      const outcome = await payForOrder('travel', order.id, { name: cust?.name ?? undefined, email: cust?.email ?? undefined, contact: phone.trim() });
+      if (outcome === 'dismissed') {
         setErr('Payment not completed. Tap “Pay Booking Amount” to try again.');
+        toast('Payment not completed — you can try again.', 'info');
+        return;
       }
-    } catch (e: any) { setErr(e.message ?? 'Booking failed. Please try again.'); }
+      // The client said "captured", but that isn't proof — the Razorpay webhook is the source
+      // of truth. Confirm the server-verified payment_status before showing any success/amount.
+      const result = await confirmPaid('travel', order.id);
+      if (result === 'paid') {
+        setDone({ id: order.id, total: fare, paid: bookingFee, balance, date: prettyDate(dateISO), time: to12(Number(time.slice(0, 2)), Number(time.slice(3))) });
+      } else if (result === 'failed') {
+        setErr('Payment failed. Tap “Pay Booking Amount” to try again.');
+        toast('Payment failed — please try again.', 'error');
+      } else {
+        setErr('Payment received — we’re confirming your booking. It’ll appear in My Bookings shortly.');
+        toast('Confirming your payment…', 'info');
+      }
+    } catch (e: any) {
+      setErr(e.message ?? 'Booking failed. Please try again.');
+      toast(e.message ?? 'Booking failed. Please try again.', 'error');
+    }
     finally { setBusy(false); }
   };
 
   // ── Success screen (screen 16) ───────────────────────────────────────────
   if (done) {
     return (
-      <div className="relative mx-auto flex min-h-screen max-w-[480px] flex-col bg-white px-5 pb-10 pt-[calc(1.5rem+env(safe-area-inset-top))]">
+      <div className="relative mx-auto flex min-h-screen max-w-[480px] flex-col overflow-x-clip bg-white px-5 pb-10 pt-[calc(1.5rem+env(safe-area-inset-top))]">
         <div className="flex items-center justify-between">
           <button onClick={() => router.push('/')} aria-label="Home" className="-ml-1 flex h-11 w-11 items-center justify-center text-ink"><Icons.ChevronLeft className="h-6 w-6" /></button>
         </div>
@@ -174,9 +196,9 @@ function Travel() {
         <p className="mp-rise-2 mt-1 text-center text-[14px] text-muted">Order #{done.id}</p>
 
         <div className="mt-9 space-y-3">
-          <div className="flex justify-between text-[13px]"><span className="font-semibold uppercase tracking-wide text-muted">Total amount</span><span className="font-bold text-ink">₹{done.total}</span></div>
-          <div className="flex justify-between text-[13px]"><span className="font-semibold uppercase tracking-wide text-muted">Amount paid</span><span className="font-bold text-ink">₹{done.paid}</span></div>
-          <div className="flex justify-between text-[13px]"><span className="font-semibold uppercase tracking-wide text-muted">Amount to be paid</span><span className="font-bold text-success">₹{done.balance}</span></div>
+          <div className="flex items-baseline justify-between gap-3 text-[13px]"><span className="min-w-0 font-semibold uppercase tracking-wide text-muted">Total amount</span><span className="shrink-0 whitespace-nowrap font-bold tabular-nums text-ink">₹{done.total}</span></div>
+          <div className="flex items-baseline justify-between gap-3 text-[13px]"><span className="min-w-0 font-semibold uppercase tracking-wide text-muted">Amount paid</span><span className="shrink-0 whitespace-nowrap font-bold tabular-nums text-ink">₹{done.paid}</span></div>
+          <div className="flex items-baseline justify-between gap-3 text-[13px]"><span className="min-w-0 font-semibold uppercase tracking-wide text-muted">Amount to be paid</span><span className="shrink-0 whitespace-nowrap font-bold tabular-nums text-success">₹{done.balance}</span></div>
         </div>
 
         <div className="mp-rise-3 mt-auto space-y-3 pt-10">
@@ -212,7 +234,7 @@ function Travel() {
   // ── Step 1: date & time ──────────────────────────────────────────────────
   if (step === 1) {
     return (
-      <PageShell variant="mint" size="compact" title="Travel" onBack={onBack} pills={pills}
+      <PageShell variant="mint" size="compact" title="Travel" onBack={onBack} pills={pills} contentKey={step}
         footer={<PillButton disabled={!(dateISO && time)} onClick={() => setStep(2)}>Next</PillButton>}>
         <h2 className="text-[20px] font-bold text-ink">Select Date</h2>
         <div className="mt-3 flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -240,13 +262,13 @@ function Travel() {
   // ── Step 2: pickup / drop (+ pet + contact) ──────────────────────────────
   if (step === 2) {
     return (
-      <PageShell variant="mint" size="compact" title="Travel" onBack={onBack} pills={pills}
+      <PageShell variant="mint" size="compact" title="Travel" onBack={onBack} pills={pills} contentKey={step}
         footer={<PillButton disabled={!step2Ready} loading={busy} onClick={() => setStep(3)}>{route || !(pickup && drop) ? 'Next' : 'Calculating route…'}</PillButton>}>
         <div className="mb-5"><RecapPill text={recap} onClick={() => setStep(1)} /></div>
 
         <PickupDropInput
-          pickup={pickup?.address}
-          drop={drop?.address}
+          pickup={pickup ? placeName(pickup.name, pickup.address) : undefined}
+          drop={drop ? placeName(drop.name, drop.address) : undefined}
           onPickupClick={() => setSearchFor('pickup')}
           onDropClick={() => setSearchFor('drop')}
         />
@@ -261,9 +283,9 @@ function Travel() {
 
         {err && <p className="mt-2 text-[13px] font-medium text-danger">{err}</p>}
 
-        <Sheet open={searchFor !== null} onClose={() => setSearchFor(null)} title={searchFor === 'pickup' ? 'Set pickup' : 'Set drop'}>
+        <Sheet open={searchFor !== null} onClose={() => setSearchFor(null)} align="search" title={searchFor === 'pickup' ? 'Set pickup' : 'Set drop'}>
           <PlaceInput bare autoFocus placeholder={searchFor === 'pickup' ? 'Search pickup…' : 'Where to?'}
-            onPicked={p => { searchFor === 'pickup' ? setPickup(p) : setDrop(p); setSearchFor(null); }} />
+            onPicked={p => { searchFor === 'pickup' ? setPickup(p) : setDrop(p); setSearchFor(null); toast('Location set', 'success', 1600); }} />
           <p className="mt-3 text-[12px] text-muted">Start typing an address, then pick from the suggestions.</p>
         </Sheet>
       </PageShell>
@@ -273,7 +295,7 @@ function Travel() {
   // ── Step 3: choose a ride ────────────────────────────────────────────────
   if (step === 3) {
     return (
-      <PageShell variant="mint" size="compact" title="Travel" onBack={onBack} pills={pills}
+      <PageShell variant="mint" size="compact" title="Travel" onBack={onBack} pills={pills} contentKey={step}
         sheetClassName="!px-0"
         footer={<PillButton disabled={fare == null} onClick={() => setStep(4)}>Select</PillButton>}>
         <div className="relative -mt-3 mb-1 h-52 w-full overflow-hidden border-y border-line">
@@ -290,15 +312,15 @@ function Travel() {
           <h2 className="mt-4 text-center text-[20px] font-bold text-ink">Choose a ride</h2>
           <div className="mt-3"><ButterCallout tone="bar">Pay booking fees and the remaining payment after drop.</ButterCallout></div>
 
-          <button type="button" className="mt-4 flex w-full items-center gap-3 rounded-card bg-plum-soft p-3 text-left">
+          <button type="button" className="mt-4 flex w-full items-center gap-3 rounded-card bg-plum-soft p-3 text-left transition active:scale-[0.99]">
             <span className="flex h-14 w-16 items-center justify-center rounded-xl bg-white text-3xl">🚕</span>
             <span className="min-w-0 flex-1">
               <span className="block text-[16px] font-bold text-ink">Intracity Pet Cab</span>
               <span className="block text-[13px] text-muted">{route ? `${route.km.toFixed(1)} km · ~${route.min} min` : '—'}</span>
             </span>
-            <span className="text-right">
-              <span className="block text-[15px] font-bold text-success">Pay ₹{bookingFee}</span>
-              <span className="block text-[13px] text-muted">≈ ₹{fare ?? '—'} total</span>
+            <span className="shrink-0 whitespace-nowrap text-right">
+              <span className="block text-[15px] font-bold tabular-nums text-success">Pay ₹{bookingFee}</span>
+              <span className="block text-[13px] tabular-nums text-muted">≈ ₹{fare ?? '—'} total</span>
             </span>
           </button>
         </div>
@@ -308,7 +330,7 @@ function Travel() {
 
   // ── Step 4: fare breakdown ───────────────────────────────────────────────
   return (
-    <PageShell variant="mint" size="compact" title="Travel" onBack={onBack} pills={pills}
+    <PageShell variant="mint" size="compact" title="Travel" onBack={onBack} pills={pills} contentKey={step}
       footer={<PillButton trailing={`₹${bookingFee}`} loading={busy} onClick={book}>Pay Booking Amount</PillButton>}>
       <div className="rounded-card bg-butter p-5 text-center">
         <p className="text-[14px] font-bold text-ink">Booking Amount</p>
@@ -316,11 +338,11 @@ function Travel() {
       </div>
 
       <div className="mt-6 space-y-3">
-        <div className="flex justify-between text-[15px]"><span className="text-body">Booking amount (now)</span><span className="font-bold text-success">₹{bookingFee}</span></div>
-        <div className="flex justify-between text-[15px]"><span className="text-body">Estimated fare</span><span className="text-ink">₹{fare}</span></div>
-        <div className="flex justify-between text-[15px]"><span className="text-body">Balance after trip</span><span className="text-ink">₹{balance}</span></div>
+        <div className="flex items-baseline justify-between gap-3 text-[15px]"><span className="min-w-0 text-body">Booking amount (now)</span><span className="shrink-0 whitespace-nowrap font-bold tabular-nums text-success">₹{bookingFee}</span></div>
+        <div className="flex items-baseline justify-between gap-3 text-[15px]"><span className="min-w-0 text-body">Estimated fare</span><span className="shrink-0 whitespace-nowrap tabular-nums text-ink">₹{fare}</span></div>
+        <div className="flex items-baseline justify-between gap-3 text-[15px]"><span className="min-w-0 text-body">Balance after trip</span><span className="shrink-0 whitespace-nowrap tabular-nums text-ink">₹{balance}</span></div>
         <div className="my-1 h-px bg-line" />
-        <div className="flex justify-between text-[15px] font-bold text-plum"><span>Estimated total</span><span>₹{fare}</span></div>
+        <div className="flex items-baseline justify-between gap-3 text-[15px] font-bold text-plum"><span>Estimated total</span><span className="shrink-0 whitespace-nowrap tabular-nums">₹{fare}</span></div>
       </div>
 
       <p className="mt-5 text-[12px] leading-[1.5] text-muted">Balance fare is collected after the trip. Estimate may vary with route &amp; waiting time.</p>

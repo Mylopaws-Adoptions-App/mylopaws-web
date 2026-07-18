@@ -13,7 +13,7 @@ export function RecapPill({ text, onClick }: { text: string; onClick?: () => voi
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex h-10 items-center gap-2 rounded-full bg-plum-soft px-4 text-[14px] font-medium text-plum"
+      className="inline-flex h-10 items-center gap-2 rounded-full bg-plum-soft px-4 text-[14px] font-medium text-plum transition active:scale-[0.97]"
     >
       <Clock className="h-4 w-4" />
       <span>{text}</span>

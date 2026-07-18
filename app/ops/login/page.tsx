@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { PillButton, Field } from '@/components/design';
+import { PillButton, Field, Logo } from '@/components/design';
 
 export default function OpsLogin() {
   const [email, setEmail] = useState('');
@@ -22,7 +22,7 @@ export default function OpsLogin() {
   return (
     <main className="mx-auto flex min-h-screen max-w-[480px] flex-col bg-white">
       <div className="flex flex-col items-center justify-center px-6 pb-8 pt-20 text-center">
-        <div className="text-5xl">🐾</div>
+        <Logo boxClassName="h-16 w-44" priority />
         <h1 className="mt-3 text-[28px] font-extrabold tracking-[-0.5px] text-ink">Mylopaws Ops</h1>
         <p className="mt-1 text-[14px] font-semibold text-plum">Seller &amp; Operations Platform</p>
       </div>
