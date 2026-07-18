@@ -2,6 +2,7 @@
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import { ChevronLeft } from './icons';
+import { Portal } from './Portal';
 import { showTabBar } from '@/components/TabBar';
 
 /**
@@ -106,11 +107,15 @@ export function PageShell({
       </main>
 
       {footer && (
-        <div className={`fixed left-1/2 z-30 w-full max-w-[480px] -translate-x-1/2 border-t border-line bg-white px-5 pt-3 ${
-          withTab ? 'bottom-[calc(56px_+_env(safe-area-inset-bottom))]' : 'bottom-0 pb-[env(safe-area-inset-bottom)]'
-        }`}>
-          <div className="pb-3">{footer}</div>
-        </div>
+        // Portaled to <body> so the fixed CTA escapes the animated `.mp-page` ancestor and stays
+        // pinned to the viewport (never scrolls away). Stacks above TabBar via the bottom offset.
+        <Portal>
+          <div className={`fixed left-1/2 z-30 w-full max-w-[480px] -translate-x-1/2 border-t border-line bg-white px-5 pt-3 ${
+            withTab ? 'bottom-[calc(56px_+_env(safe-area-inset-bottom))]' : 'bottom-0 pb-[env(safe-area-inset-bottom)]'
+          }`}>
+            <div className="pb-3">{footer}</div>
+          </div>
+        </Portal>
       )}
     </div>
   );

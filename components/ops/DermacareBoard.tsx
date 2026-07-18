@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useStaff } from '@/components/OpsContext';
 import { supabase, invokeFn } from '@/lib/supabase';
 import { STATUS_META, Staff, aggressionMeta, fmtApptDateTime, navUrl, rupees } from '@/lib/types';
-import { Segmented, SelectChip, Sheet, LoadingState, EmptyState, ErrorState } from '@/components/design';
+import { Segmented, SelectChip, Sheet, LoadingState, EmptyState, ErrorState, Portal } from '@/components/design';
 
 const PAST = ['delivered', 'cancelled'];
 const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -180,17 +180,19 @@ export default function DermacareBoard() {
             : <div className="mt-5 space-y-3">{past.map(card)}</div>
         )}
 
-      {/* GAP 4 — bulk assign bar */}
+      {/* GAP 4 — bulk assign bar (portaled to body so it stays pinned above the ops bottom nav) */}
       {isAdmin && selected.size > 0 && (
-        <div className="fixed bottom-[calc(56px+env(safe-area-inset-bottom))] left-1/2 z-30 w-full max-w-2xl -translate-x-1/2 border-t border-line bg-white px-5 pb-3 pt-3">
-          <div className="flex items-center gap-3">
-            <button onClick={() => setSelected(new Set())} className="text-[13px] font-semibold text-muted">Clear</button>
-            <button onClick={() => setPicker({ ids: Array.from(selected), date: selectedList[0]?.date_of_appointment ?? todayISO() })}
-              className="flex min-h-[52px] flex-1 items-center justify-center rounded-btn bg-plum text-[15px] font-bold text-white">
-              Assign {selected.size} job{selected.size === 1 ? '' : 's'} to a groomer
-            </button>
+        <Portal>
+          <div className="fixed bottom-[calc(56px+env(safe-area-inset-bottom))] left-1/2 z-30 w-full max-w-2xl -translate-x-1/2 border-t border-line bg-white px-5 pb-3 pt-3">
+            <div className="flex items-center gap-3">
+              <button onClick={() => setSelected(new Set())} className="text-[13px] font-semibold text-muted">Clear</button>
+              <button onClick={() => setPicker({ ids: Array.from(selected), date: selectedList[0]?.date_of_appointment ?? todayISO() })}
+                className="flex min-h-[52px] flex-1 items-center justify-center rounded-btn bg-plum text-[15px] font-bold text-white">
+                Assign {selected.size} job{selected.size === 1 ? '' : 's'} to a groomer
+              </button>
+            </div>
           </div>
-        </div>
+        </Portal>
       )}
 
       {/* Assignment / reassignment picker with workload intelligence */}

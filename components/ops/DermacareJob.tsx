@@ -5,7 +5,7 @@ import { useStaff } from '@/components/OpsContext';
 import { supabase, invokeFn } from '@/lib/supabase';
 import { aggressionMeta, fmtApptDateTime, navUrl, rupees } from '@/lib/types';
 import { toast } from '@/lib/toast';
-import { Sheet, Field, LoadingState, ErrorState, Icons } from '@/components/design';
+import { Sheet, Field, LoadingState, ErrorState, Icons, Portal } from '@/components/design';
 
 type Row = any;
 const push = (order_id: number, status: string) => invokeFn('send-push', { mode: 'status', order_type: 'dermacare', order_id, status }).catch(() => {});
@@ -241,8 +241,13 @@ function Shell({ children, onBack, sticky }: { children: React.ReactNode; onBack
         <h1 className="text-[20px] font-bold text-ink">Booking Detail</h1>
       </header>
       <main className={`px-5 pt-3 ${sticky ? 'pb-28' : 'pb-10'}`}>{children}</main>
-      {/* Sticky Call/Navigate bar sits directly ABOVE the persistent ops bottom nav (56px+safe). */}
-      {sticky && <div className="fixed bottom-[calc(56px+env(safe-area-inset-bottom))] left-1/2 z-30 w-full max-w-[480px] -translate-x-1/2 border-t border-line bg-white">{sticky}</div>}
+      {/* Sticky Call/Navigate bar sits directly ABOVE the persistent ops bottom nav (56px+safe).
+          Portaled to body so it escapes the animated `.mp-page` ancestor and never scrolls away. */}
+      {sticky && (
+        <Portal>
+          <div className="fixed bottom-[calc(56px+env(safe-area-inset-bottom))] left-1/2 z-30 w-full max-w-[480px] -translate-x-1/2 border-t border-line bg-white">{sticky}</div>
+        </Portal>
+      )}
     </div>
   );
 }
