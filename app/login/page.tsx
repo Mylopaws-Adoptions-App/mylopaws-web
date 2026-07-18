@@ -61,8 +61,11 @@ export default function Login() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-[480px] flex-col bg-white px-5 pb-8 pt-[calc(1.75rem+env(safe-area-inset-top))]">
-      {/* Brand */}
-      <Logo boxClassName="h-11 w-40" priority />
+      {/* Brand — logo on the left, wordmark title beside it */}
+      <div className="flex items-center gap-2.5">
+        <Logo boxClassName="h-11 w-11" priority />
+        <span className="text-[24px] font-extrabold tracking-[-0.5px] text-plum">Mylopaws</span>
+      </div>
 
       {/* Hero — bold typographic lead so the CTA + price hooks stay above the fold on a 375px phone */}
       <h1 className="mt-6 text-[34px] font-extrabold leading-[1.12] tracking-[-0.6px] text-ink">
