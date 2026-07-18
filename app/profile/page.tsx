@@ -7,6 +7,7 @@ import PetPicker from '@/components/PetPicker';
 import PlaceInput, { PickedPlace } from '@/components/PlaceInput';
 import { PageShell, PillButton, Field, Skeleton } from '@/components/design';
 import { toast } from '@/lib/toast';
+import { track } from '@/lib/analytics';
 
 function Profile() {
   const { session } = useSession();
@@ -34,11 +35,13 @@ function Profile() {
     setSaving(true);
     const { error } = await supabase.from('customers').update(f).eq('id', session!.user.id);
     setSaving(false);
+    if (!error) track('profile_update');
     toast(error ? error.message : 'Profile saved 🐾', error ? 'error' : 'success');
   };
   const addAddress = async () => {
     if (!picked) return;
     const { error } = await supabase.from('addresses').insert({ customer_id: session!.user.id, label, address_text: picked.address, lat: picked.lat, lng: picked.lng });
+    if (!error) track('add_address');
     setPicked(null); setLabel('Home'); loadAll();
     toast(error ? 'Could not save address' : 'Address saved 📍', error ? 'error' : 'success');
   };
@@ -122,7 +125,7 @@ function Profile() {
         )}
       </Group>
 
-      <button onClick={() => supabase.auth.signOut().then(() => location.assign('/login'))}
+      <button onClick={() => { track('logout'); supabase.auth.signOut().then(() => location.assign('/login')); }}
         className="mt-8 flex min-h-[52px] w-full items-center justify-center rounded-btn border-[1.5px] border-danger text-[15px] font-bold text-danger">
         Log out
       </button>

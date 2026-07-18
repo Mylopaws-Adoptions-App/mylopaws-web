@@ -7,6 +7,7 @@ import PetPicker from '@/components/PetPicker';
 import { supabase } from '@/lib/supabase';
 import { payForOrder, confirmPaid } from '@/lib/razorpay';
 import { toast } from '@/lib/toast';
+import { track } from '@/lib/analytics';
 import { Address, Pet, Service, Addon, mapsLink, rupees, placeName } from '@/lib/types';
 import { PageShell, PillButton, SelectChip, Field, LoadingState, ErrorState, Icons } from '@/components/design';
 
@@ -36,6 +37,9 @@ function BookInner() {
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  // Analytics: entered the dermacare booking flow (fires once on mount).
+  useEffect(() => { track('booking_start', { vertical: 'dermacare' }); }, []);
 
   useEffect(() => {
     supabase.from('services').select('*').eq('active', true).order('sort_order')
@@ -80,8 +84,10 @@ function BookInner() {
       ];
       const { error: itemsErr } = await supabase.from('dermacare_order_items').insert(items);
       if (itemsErr) throw itemsErr;
+      track('add_payment_info', { vertical: 'dermacare', value: estTotal, currency: 'INR' });
       const outcome = await payForOrder('dermacare', order.id, { name: cust?.name ?? undefined, email: cust?.email ?? undefined, contact: phone.trim() });
       if (outcome === 'dismissed') {
+        track('payment_failed', { vertical: 'dermacare', reason: 'dismissed' });
         setErr('Payment not completed. Tap “Pay & book” to try again.');
         toast('Payment not completed — you can try again.', 'info');
         return;
@@ -89,9 +95,11 @@ function BookInner() {
       // Verify server-side (webhook) before treating the booking as confirmed.
       const result = await confirmPaid('dermacare', order.id);
       if (result === 'paid') {
+        track('purchase', { transaction_id: String(order.id), value: estTotal, currency: 'INR', vertical: 'dermacare', pets_count: petsCount });
         toast('Booking confirmed ✨', 'success');
         router.push(`/track/dermacare/${order.id}`);
       } else if (result === 'failed') {
+        track('payment_failed', { vertical: 'dermacare', reason: 'failed' });
         setErr('Payment failed. Tap “Pay & book” to try again.');
         toast('Payment failed — please try again.', 'error');
       } else {
@@ -123,7 +131,7 @@ function BookInner() {
           {services.map(s => {
             const sel = service.id === s.id;
             return (
-              <button key={s.id} onClick={() => setService(s)}
+              <button key={s.id} onClick={() => { setService(s); track('select_service', { vertical: 'dermacare', item_id: s.id, item_name: s.name, price: Number(s.base_price) }); }}
                 className={`w-full rounded-card border p-4 text-left transition active:scale-[0.98] ${sel ? 'border-plum bg-plum-soft' : 'border-line bg-white shadow-card'}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -159,7 +167,7 @@ function BookInner() {
           {addons.map(a => {
             const sel = chosen.has(a.id);
             return (
-              <button key={a.id} onClick={() => toggle(a.id)}
+              <button key={a.id} onClick={() => { track('select_addon', { vertical: 'dermacare', item_id: a.id, item_name: a.name, price: Number(a.price), selected: !chosen.has(a.id) }); toggle(a.id); }}
                 className={`flex w-full items-start gap-3 rounded-card border p-4 text-left transition active:scale-[0.98] ${sel ? 'border-plum bg-plum-soft' : 'border-line bg-white shadow-card'}`}>
                 <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border ${sel ? 'border-plum bg-plum text-white' : 'border-line bg-white'}`}>
                   {sel && <Icons.Check className="h-3.5 w-3.5" />}
@@ -206,7 +214,7 @@ function BookInner() {
     const ready = !!(addr && date && slot && phone.trim().length >= 10);
     return (
       <PageShell variant="plum" size="large" title="Where & when" subtitle="Mon–Sat, 11 AM – 6 PM" onBack={onBack} contentKey={step}
-        footer={<><EstBar /><PillButton disabled={!ready} onClick={() => setStep(5)}>Review</PillButton></>}>
+        footer={<><EstBar /><PillButton disabled={!ready} onClick={() => { track('begin_checkout', { vertical: 'dermacare', value: estTotal, currency: 'INR', pets_count: petsCount }); setStep(5); }}>Review</PillButton></>}>
         <h2 className="text-[17px] font-bold text-ink">Address</h2>
         {saved.length > 0 && (
           <div className="mb-3 mt-3 flex flex-wrap gap-2">

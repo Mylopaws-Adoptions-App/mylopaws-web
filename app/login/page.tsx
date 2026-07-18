@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { track } from '@/lib/analytics';
 import { PillButton, Photo, Field, Logo } from '@/components/design';
 
 export default function Login() {
@@ -22,6 +23,7 @@ export default function Login() {
 
   const signIn = async () => {
     setBusy(true); setErr(null);
+    track('login_start', { method: 'google' });
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined },
@@ -32,8 +34,10 @@ export default function Login() {
   const signInWithPassword = async () => {
     if (!email.trim() || !password) { setErr('Enter both email and password.'); return; }
     setTestBusy(true); setErr(null);
+    track('login_start', { method: 'password' });
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (error) { setErr(error.message); setTestBusy(false); return; }
+    track('login', { method: 'password' });
     router.replace('/');
   };
 

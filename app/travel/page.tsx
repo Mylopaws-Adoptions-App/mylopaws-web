@@ -12,6 +12,7 @@ import { supabase, getConfig } from '@/lib/supabase';
 import { importMapsLibrary, getMapsAuthError, MapsKeyMissingError } from '@/lib/maps';
 import { payForOrder, confirmPaid } from '@/lib/razorpay';
 import { toast } from '@/lib/toast';
+import { track } from '@/lib/analytics';
 import { Pet, computeFare, mapsLink, placeName } from '@/lib/types';
 
 const MODES = ['Intracity', 'Out Station', 'Train', 'Airline'];
@@ -58,6 +59,9 @@ function Travel() {
   const describeMapsError = (e: unknown) =>
     e instanceof MapsKeyMissingError ? 'Map unavailable — NEXT_PUBLIC_GOOGLE_MAPS_KEY is not set.' : `Map unavailable — ${(e as Error)?.message ?? 'failed to load'}`;
 
+  // Analytics: entered the travel booking flow (fires once on mount).
+  useEffect(() => { track('booking_start', { vertical: 'travel' }); }, []);
+
   // Load fare config, pets, saved phone (unchanged queries).
   useEffect(() => {
     getConfig('fare').then(setFareCfg);
@@ -85,6 +89,7 @@ function Travel() {
           rendererRef.current?.setDirections(res);
           const leg = res.routes[0].legs[0];
           setRoute({ km: leg.distance.value / 1000, min: Math.round(leg.duration.value / 60) });
+          track('route_calculated', { vertical: 'travel', distance_km: Math.round(leg.distance.value / 100) / 10, duration_min: Math.round(leg.duration.value / 60) });
         });
     }).catch(e => { const m = describeMapsError(e); setMapErr(m); setErr(m); });
   }, [pickup, drop]);
@@ -149,8 +154,10 @@ function Travel() {
         breed: pet.breed, aggressive: pet.aggressive, rescue: pet.rescue, critical: !!pet.critical_notes,
       }).select('id').single();
       if (error) throw error;
+      track('add_payment_info', { vertical: 'travel', value: bookingFee, currency: 'INR' });
       const outcome = await payForOrder('travel', order.id, { name: cust?.name ?? undefined, email: cust?.email ?? undefined, contact: phone.trim() });
       if (outcome === 'dismissed') {
+        track('payment_failed', { vertical: 'travel', reason: 'dismissed' });
         setErr('Payment not completed. Tap “Pay Booking Amount” to try again.');
         toast('Payment not completed — you can try again.', 'info');
         return;
@@ -159,8 +166,10 @@ function Travel() {
       // of truth. Confirm the server-verified payment_status before showing any success/amount.
       const result = await confirmPaid('travel', order.id);
       if (result === 'paid') {
+        track('purchase', { transaction_id: String(order.id), value: bookingFee, currency: 'INR', vertical: 'travel', fare_estimate: fare });
         setDone({ id: order.id, total: fare, paid: bookingFee, balance, date: prettyDate(dateISO), time: to12(Number(time.slice(0, 2)), Number(time.slice(3))) });
       } else if (result === 'failed') {
+        track('payment_failed', { vertical: 'travel', reason: 'failed' });
         setErr('Payment failed. Tap “Pay Booking Amount” to try again.');
         toast('Payment failed — please try again.', 'error');
       } else {
@@ -215,7 +224,7 @@ function Travel() {
   }
 
   const onBack = () => (step === 1 ? router.push('/') : setStep((step - 1) as Step));
-  const pills = <ModePillRow options={MODES} value={mode} onChange={setMode} />;
+  const pills = <ModePillRow options={MODES} value={mode} onChange={(m) => { setMode(m); track('select_mode', { vertical: 'travel', mode: m }); }} />;
 
   // Non-Intracity modes aren't live yet — honest "coming soon" instead of a dead flow.
   if (mode !== 'Intracity') {
@@ -297,7 +306,7 @@ function Travel() {
     return (
       <PageShell variant="mint" size="compact" title="Travel" onBack={onBack} pills={pills} contentKey={step}
         sheetClassName="!px-0"
-        footer={<PillButton disabled={fare == null} onClick={() => setStep(4)}>Select</PillButton>}>
+        footer={<PillButton disabled={fare == null} onClick={() => { track('begin_checkout', { vertical: 'travel', value: fare ?? undefined, currency: 'INR', booking_fee: bookingFee }); setStep(4); }}>Select</PillButton>}>
         <div className="relative -mt-3 mb-1 h-52 w-full overflow-hidden border-y border-line">
           <div ref={mapDiv} className="h-full w-full" />
           {mapErr && (

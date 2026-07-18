@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { track } from '@/lib/analytics';
 import { Pet, AGGRESSION_META } from '@/lib/types';
 import { PillButton, SelectChip, Field, Sheet } from '@/components/design';
 
@@ -23,6 +24,7 @@ export default function PetPicker({ pets, selected, onSelect, onPetAdded, userId
     }).select().single();
     setSaving(false);
     if (error) { setErr(error.message); return; }
+    track('add_pet');
     onPetAdded(data as Pet); onSelect(data as Pet);
     setOpen(false); setF({ name: '', breed: '', age: '', aggression: 0, rescue: false, notes: '' });
   };

@@ -5,6 +5,7 @@ import AuthGate, { useSession } from '@/components/AuthGate';
 import PetPicker from '@/components/PetPicker';
 import { Btn, Card, Field } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
+import { track } from '@/lib/analytics';
 import { Pet, HOMES_PROVIDER, HOMES_RATE_PER_NIGHT, nightsBetween } from '@/lib/types';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -32,6 +33,10 @@ function Book() {
   const total = nights * HOMES_RATE_PER_NIGHT * numCats;
   const canBook = pet && nights > 0 && numCats >= 1 && phone.trim().length >= 10;
 
+  // Analytics: entered the stay-request flow, and a valid date range was chosen.
+  useEffect(() => { track('booking_start', { vertical: 'homes' }); }, []);
+  useEffect(() => { if (nights > 0) track('set_dates', { vertical: 'homes', nights }); }, [nights]);
+
   const book = async () => {
     if (!canBook) return;
     setBusy(true); setErr(null);
@@ -45,8 +50,9 @@ function Book() {
         notes: notes.trim() || null,
       }).select('id').single();
       if (error) throw error;
+      track('generate_lead', { vertical: 'homes', value: total, currency: 'INR', nights, num_cats: numCats });
       router.push(`/homes/booking/${order.id}`);
-    } catch (e: any) { setErr(e.message ?? 'Could not send your request. Please try again.'); }
+    } catch (e: any) { track('request_failed', { vertical: 'homes' }); setErr(e.message ?? 'Could not send your request. Please try again.'); }
     finally { setBusy(false); }
   };
 
