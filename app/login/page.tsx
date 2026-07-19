@@ -3,10 +3,10 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { track } from '@/lib/analytics';
 import { rupees } from '@/lib/types';
 import { getLandingPrices, LANDING_PRICE_FALLBACK } from '@/lib/pricing';
 import { PillButton, Photo, Logo, Icons } from '@/components/design';
+import PhoneAuthSheet from '@/components/PhoneAuthSheet';
 
 // Pre-login landing — the first FB/IG ad impression. Conversion goal: understand Mylopaws in
 // seconds and tap ONE primary CTA to sign in / sign up. Structure (UI/UX Pro Max "Social-Proof +
@@ -14,9 +14,11 @@ import { PillButton, Photo, Logo, Icons } from '@/components/design';
 // service cards → trust points → repeat CTA → policy links + staff entry. Prices are
 // sourced LIVE (see lib/pricing) so the marketing numbers never drift from checkout.
 export default function Login() {
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
   const router = useRouter();
+
+  // Every CTA (hero button, service cards, repeat button) opens the passwordless phone+OTP sheet.
+  const [authOpen, setAuthOpen] = useState(false);
+  const openAuth = () => setAuthOpen(true);
 
   // Live price hooks — seed with the current live values so the numbers paint instantly (no CLS),
   // then reconcile with the DB in case the owner changes a price later.
@@ -26,16 +28,6 @@ export default function Login() {
     supabase.auth.getSession().then(({ data }) => { if (data.session) router.replace('/'); });
     getLandingPrices().then(setPrices).catch(() => {});
   }, [router]);
-
-  const signIn = async () => {
-    setBusy(true); setErr(null);
-    track('login_start', { method: 'google' });
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined },
-    });
-    if (error) { setErr(error.message); setBusy(false); }
-  };
 
   const services = [
     { emoji: '✨', name: 'Dermacare grooming', tag: 'Medicated skin & coat therapy, at home', price: `from ${rupees(prices.fullServiceFrom)}`, cls: 'bg-plum text-white', priceCls: 'bg-butter text-plum' },
@@ -60,7 +52,7 @@ export default function Login() {
       </p>
 
       <div className="mt-6">
-        <PillButton onClick={signIn} loading={busy}>Get started</PillButton>
+        <PillButton onClick={openAuth}>Get started</PillButton>
       </div>
       <div className="mt-3 flex items-center justify-center gap-1.5 text-[13px] font-semibold text-body">
         <span className="text-[15px]">★</span> 4.9 · Loved by 2,000+ pawparents in Bengaluru
@@ -73,8 +65,8 @@ export default function Login() {
       {/* Live price hooks as scannable service cards — tapping any card starts sign-in, same as "Get started". */}
       <section className="mt-7 space-y-3">
         {services.map((s) => (
-          <button key={s.name} type="button" onClick={signIn} disabled={busy}
-            className={`flex w-full items-center gap-3 rounded-card p-4 text-left shadow-card transition active:scale-[0.99] disabled:opacity-70 ${s.cls}`}>
+          <button key={s.name} type="button" onClick={openAuth}
+            className={`flex w-full items-center gap-3 rounded-card p-4 text-left shadow-card transition active:scale-[0.99] ${s.cls}`}>
             <span className="text-[26px] leading-none" aria-hidden>{s.emoji}</span>
             <div className="min-w-0 flex-1">
               <p className="text-[16px] font-bold">{s.name}</p>
@@ -103,9 +95,8 @@ export default function Login() {
 
       {/* Repeat primary CTA after the social proof */}
       <div className="mt-7">
-        <PillButton onClick={signIn} loading={busy}>Get started</PillButton>
+        <PillButton onClick={openAuth}>Get started</PillButton>
 
-        {err && <p className="mt-3 text-center text-[13px] font-medium text-danger">{err}</p>}
         <p className="mt-4 text-center text-[12px] leading-[1.5] text-muted">
           By continuing you agree to our{' '}
           <Link href="/terms" className="font-medium text-plum underline underline-offset-2">Terms</Link> and{' '}
@@ -127,6 +118,8 @@ export default function Login() {
           Staff? Admin login
         </Link>
       </div>
+
+      <PhoneAuthSheet open={authOpen} onClose={() => setAuthOpen(false)} />
     </main>
   );
 }

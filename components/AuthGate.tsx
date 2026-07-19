@@ -22,10 +22,13 @@ export default function AuthGate({ children, redirect = '/login' }: { children: 
   useEffect(() => {
     if (ready && !session) router.replace(redirect);
     if (ready && session) {
+      // Phone+OTP is the identity. Upsert ONLY the columns we know from auth (id + phone) so we never
+      // clobber a name/email the user later sets in their profile. session.user.phone is E.164 without
+      // the leading '+', so re-add it to match the profile's stored format.
+      const phone = session.user.phone ? `+${session.user.phone}` : null;
       supabase.from('customers').upsert({
         id: session.user.id,
-        name: (session.user.user_metadata?.full_name ?? session.user.user_metadata?.name) || null,
-        email: session.user.email ?? null,
+        ...(phone ? { phone_number: phone } : {}),
       }, { onConflict: 'id' }).then(() => {});
     }
   }, [ready, session, redirect, router]);
