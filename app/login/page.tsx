@@ -6,12 +6,12 @@ import { supabase } from '@/lib/supabase';
 import { track } from '@/lib/analytics';
 import { rupees } from '@/lib/types';
 import { getLandingPrices, LANDING_PRICE_FALLBACK } from '@/lib/pricing';
-import { PillButton, Photo, Field, Logo, Icons } from '@/components/design';
+import { PillButton, Photo, Logo, Icons } from '@/components/design';
 
 // Pre-login landing — the first FB/IG ad impression. Conversion goal: understand Mylopaws in
 // seconds and tap ONE primary CTA to sign in / sign up. Structure (UI/UX Pro Max "Social-Proof +
 // Trust"): wordmark → typographic hero + CTA above the fold → photo band → live price hooks /
-// service cards → trust points → repeat CTA → subordinate test-creds + staff entry. Prices are
+// service cards → trust points → repeat CTA → policy links + staff entry. Prices are
 // sourced LIVE (see lib/pricing) so the marketing numbers never drift from checkout.
 export default function Login() {
   const [busy, setBusy] = useState(false);
@@ -21,12 +21,6 @@ export default function Login() {
   // Live price hooks — seed with the current live values so the numbers paint instantly (no CLS),
   // then reconcile with the DB in case the owner changes a price later.
   const [prices, setPrices] = useState(LANDING_PRICE_FALLBACK);
-
-  // Test-credentials sign-in (for reviewers who can't use Google OAuth) — subordinate to Google.
-  const [showTest, setShowTest] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [testBusy, setTestBusy] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => { if (data.session) router.replace('/'); });
@@ -41,16 +35,6 @@ export default function Login() {
       options: { redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined },
     });
     if (error) { setErr(error.message); setBusy(false); }
-  };
-
-  const signInWithPassword = async () => {
-    if (!email.trim() || !password) { setErr('Enter both email and password.'); return; }
-    setTestBusy(true); setErr(null);
-    track('login_start', { method: 'password' });
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-    if (error) { setErr(error.message); setTestBusy(false); return; }
-    track('login', { method: 'password' });
-    router.replace('/');
   };
 
   const services = [
@@ -79,7 +63,7 @@ export default function Login() {
         <PillButton onClick={signIn} loading={busy}>Get started</PillButton>
       </div>
       <div className="mt-3 flex items-center justify-center gap-1.5 text-[13px] font-semibold text-body">
-        <span className="text-[15px]">★</span> 4.9 · Loved by 97 pawparents in Bengaluru
+        <span className="text-[15px]">★</span> 4.9 · Loved by 2,000+ pawparents in Bengaluru
       </div>
 
       {/* Warm accent band — the pet photo, demoted so it supports the hero rather than pushing the CTA down */}
@@ -119,24 +103,6 @@ export default function Login() {
       {/* Repeat primary CTA after the social proof */}
       <div className="mt-7">
         <PillButton onClick={signIn} loading={busy}>Get started</PillButton>
-
-        {/* Test credentials — subordinate to Google, collapsed by default */}
-        {!showTest ? (
-          <button type="button" onClick={() => { setShowTest(true); setErr(null); }}
-            className="mx-auto mt-4 block text-[13px] font-semibold text-plum underline decoration-line underline-offset-4">
-            Use test credentials
-          </button>
-        ) : (
-          <div className="mt-4 rounded-card border border-line bg-surface-alt p-4">
-            <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-muted">Test sign-in</p>
-            <Field type="email" inputMode="email" autoComplete="email" placeholder="Email"
-              value={email} onChange={e => setEmail(e.target.value)} />
-            <Field type="password" autoComplete="current-password" placeholder="Password"
-              value={password} onChange={e => setPassword(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') signInWithPassword(); }} />
-            <PillButton variant="secondary" onClick={signInWithPassword} loading={testBusy}>Sign in</PillButton>
-          </div>
-        )}
 
         {err && <p className="mt-3 text-center text-[13px] font-medium text-danger">{err}</p>}
         <p className="mt-4 text-center text-[12px] leading-[1.5] text-muted">
