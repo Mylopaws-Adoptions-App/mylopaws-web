@@ -10,12 +10,13 @@ import { Sheet, PillButton } from '@/components/design';
  * PhoneAuthSheet — passwordless phone + OTP sign-in / sign-up (India, +91).
  *
  * Two steps in one bottom sheet:
- *   1) phone   → supabase.auth.signInWithOtp({ phone })   (Supabase mints the OTP; the configured
- *                "Send SMS" auth hook delivers it via MSG91).
+ *   1) phone   → supabase.auth.signInWithOtp({ phone })   (Supabase delivers the OTP via the native
+ *                Twilio / Twilio Verify phone provider configured in the dashboard).
  *   2) otp     → supabase.auth.verifyOtp({ phone, token, type: 'sms' })  → session created inline.
  *
- * On success the session lands in the client; AuthGate's onAuthStateChange upserts the customer row
- * and we route to '/'. No OAuth redirect / callback page is involved.
+ * The client flow is provider-agnostic — Twilio vs Twilio Verify is purely a Supabase dashboard
+ * setting, no code change here. On success the session lands in the client; AuthGate's
+ * onAuthStateChange upserts the customer row and we route to '/'. No OAuth redirect / callback page.
  */
 
 const OTP_LEN = 6;
