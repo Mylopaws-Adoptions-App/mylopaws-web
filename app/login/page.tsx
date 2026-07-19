@@ -70,17 +70,18 @@ export default function Login() {
       <Photo srcKey="loginHero" alt="A happy pawfamily with their pet" priority
         className="mt-6 h-[148px] w-full" overlay="from-black/25 via-transparent to-transparent" />
 
-      {/* Live price hooks as scannable service cards */}
+      {/* Live price hooks as scannable service cards — tapping any card starts sign-in, same as "Get started". */}
       <section className="mt-7 space-y-3">
         {services.map((s) => (
-          <div key={s.name} className={`flex items-center gap-3 rounded-card p-4 shadow-card ${s.cls}`}>
+          <button key={s.name} type="button" onClick={signIn} disabled={busy}
+            className={`flex w-full items-center gap-3 rounded-card p-4 text-left shadow-card transition active:scale-[0.99] disabled:opacity-70 ${s.cls}`}>
             <span className="text-[26px] leading-none" aria-hidden>{s.emoji}</span>
             <div className="min-w-0 flex-1">
               <p className="text-[16px] font-bold">{s.name}</p>
               <p className={`text-[12.5px] leading-[1.4] ${s.cls.includes('text-white') ? 'text-white/85' : 'text-muted'}`}>{s.tag}</p>
             </div>
             <span className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-[12px] font-extrabold ${s.priceCls}`}>{s.price}</span>
-          </div>
+          </button>
         ))}
       </section>
 
