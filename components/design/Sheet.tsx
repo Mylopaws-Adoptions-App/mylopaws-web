@@ -20,12 +20,15 @@ export function Sheet({
   title,
   children,
   align = 'bottom',
+  closeLabel = 'Close',
 }: {
   open: boolean;
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
   align?: 'bottom' | 'search';
+  /** Accessible label for the search-variant close button. */
+  closeLabel?: string;
 }) {
   const [mounted, setMounted] = useState(open);
   const [closing, setClosing] = useState(false);
@@ -100,7 +103,7 @@ export function Sheet({
         <div className={`absolute inset-0 bg-ink/40 ${backdropCls}`} onClick={onClose} />
         <div className={`absolute inset-0 mx-auto flex w-full max-w-[480px] flex-col bg-white ${closing ? 'mp-search-out' : 'mp-search-in'}`}>
           <header className="flex items-center gap-2 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3">
-            <button type="button" onClick={onClose} aria-label="Close search" className="-ml-1 flex h-11 w-11 items-center justify-center text-ink">
+            <button type="button" onClick={onClose} aria-label={closeLabel} className="-ml-1 flex h-11 w-11 items-center justify-center text-ink">
               <ChevronLeft className="h-6 w-6" />
             </button>
             {title && <h3 className="text-[18px] font-bold text-ink">{title}</h3>}

@@ -9,7 +9,11 @@ import { Sheet, PillButton } from '@/components/design';
 /**
  * PhoneAuthSheet — passwordless phone + OTP sign-in / sign-up (India, +91).
  *
- * Two steps in one bottom sheet:
+ * Uses the Sheet's top-anchored `align="search"` presentation: the input sits at the TOP under a
+ * sticky header so the mobile keyboard opens BELOW it and can never cover it (a bottom sheet would
+ * have to lift above the keyboard, which is fragile once the field autofocuses on open).
+ *
+ * Two steps:
  *   1) phone   → supabase.auth.signInWithOtp({ phone })   (Supabase delivers the OTP via the native
  *                Twilio / Twilio Verify phone provider configured in the dashboard).
  *   2) otp     → supabase.auth.verifyOtp({ phone, token, type: 'sms' })  → session created inline.
@@ -72,7 +76,8 @@ export default function PhoneAuthSheet({ open, onClose }: { open: boolean; onClo
   };
 
   return (
-    <Sheet open={open} onClose={onClose} title={step === 'phone' ? 'Sign in / Sign up' : 'Enter the code'}>
+    <Sheet open={open} onClose={onClose} align="search" closeLabel="Close sign in"
+      title={step === 'phone' ? 'Sign in / Sign up' : 'Enter the code'}>
       {step === 'phone' ? (
         <>
           <p className="-mt-1 mb-4 text-[14px] leading-[1.5] text-body">
