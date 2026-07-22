@@ -4,9 +4,11 @@ import { useParams, useRouter } from 'next/navigation';
 import AuthGate, { useSession } from '@/components/AuthGate';
 import { supabase } from '@/lib/supabase';
 import { loadMaps } from '@/lib/maps';
-import { payForOrder, confirmPaid } from '@/lib/razorpay';
+import { payForOrder, confirmPaid, cancelAndRefund } from '@/lib/razorpay';
 import { STATUS_META, placeName } from '@/lib/types';
-import { PageShell, PillButton, Skeleton, ErrorState } from '@/components/design';
+import { PageShell, PillButton, Skeleton, ErrorState, Sheet } from '@/components/design';
+import { toast } from '@/lib/toast';
+import { track as trackEvent } from '@/lib/analytics';
 
 const STEPS = ['unassigned', 'assigned', 'on_the_way', 'in_progress', 'delivered'];
 
@@ -22,6 +24,8 @@ function Track() {
   const [payment, setPayment] = useState<any | null>(null);
   const [retrying, setRetrying] = useState(false);
   const [polls, setPolls] = useState(0); // Stage 3: "Confirming payment…" poll counter (2s × 15 ≈ 30s).
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const mapDiv = useRef<HTMLDivElement>(null);
   const mapObjs = useRef<{ map?: any; sup?: any; dest?: any }>({});
 
@@ -125,6 +129,27 @@ function Track() {
       .finally(() => setRetrying(false));
   };
 
+  // An admin changed the pickup time on a paid, not-yet-started travel booking → the customer
+  // may cancel for an automatic refund. pickup_changed_at is the unlock flag (set server-side).
+  const timeChanged = type === 'travel' && !!order.pickup_changed_at && paid && !cancelled
+    && ['unassigned', 'assigned'].includes(order.status);
+  const refundedAmt = order.refunded_amount ?? payment?.refunded_amount ?? null;
+
+  const doCancel = async () => {
+    setCancelling(true);
+    try {
+      const res = await cancelAndRefund('travel', Number(id));
+      trackEvent('booking_cancel_refund', { vertical: 'travel', value: res?.amount, currency: 'INR' });
+      setConfirmCancel(false);
+      toast(`Booking cancelled — ₹${res?.amount ?? ''} refund initiated.`, 'success');
+      load();
+    } catch (e: any) {
+      toast(e?.message ?? 'Could not cancel — please try again or contact us.', 'error');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   return (
     <PageShell variant="plum" size="compact" title={`${type === 'travel' ? '🚗' : '✨'} Booking #${order.id}`}
       onBack={() => router.push('/bookings')} rightAction={badge(order.status)} sheetClassName="pb-10 mp-fade">
@@ -138,7 +163,23 @@ function Track() {
       )}
 
       {order.status === 'cancelled' && (
-        <div className="mb-4 rounded-card border border-danger/30 bg-danger/5 p-4"><p className="font-bold text-danger">Cancelled{order.cancel_reason ? `: ${order.cancel_reason}` : ''}</p></div>
+        <div className="mb-4 rounded-card border border-danger/30 bg-danger/5 p-4">
+          <p className="font-bold text-danger">Cancelled{order.cancel_reason ? `: ${order.cancel_reason}` : ''}</p>
+          {refundedAmt != null && <p className="mt-1 text-[13px] font-semibold text-success">₹{refundedAmt} refunded to your original payment method — it typically lands in 3–5 working days.</p>}
+        </div>
+      )}
+
+      {timeChanged && (
+        <div className="mb-4 rounded-card border border-plum/25 bg-plum-soft p-4">
+          <p className="text-[15px] font-bold text-plum">Pickup time updated</p>
+          <p className="mt-1 text-[13px] leading-[1.5] text-body">
+            Our team changed your pickup{order.original_date_of_travel || order.original_time_of_travel ? <> from <span className="font-semibold text-ink">{order.original_date_of_travel ?? order.date_of_travel} · {order.original_time_of_travel ?? order.time_of_travel}</span></> : null} to{' '}
+            <span className="font-semibold text-ink">{order.date_of_travel} · {order.time_of_travel}</span>. If this no longer works, you can cancel and we&apos;ll refund your ₹{order.booking_fee} booking fee automatically.
+          </p>
+          <div className="mt-3 flex flex-col gap-2">
+            <PillButton variant="secondary" onClick={() => setConfirmCancel(true)}>Cancel &amp; get refund</PillButton>
+          </div>
+        </div>
       )}
 
       {paid && (
@@ -217,6 +258,14 @@ function Track() {
         className="mt-3 flex min-h-[52px] items-center justify-center rounded-btn border-[1.5px] border-plum text-[15px] font-bold text-plum transition active:scale-[0.98]">
         💬 Chat with us on WhatsApp
       </a>
+
+      <Sheet open={confirmCancel} onClose={() => setConfirmCancel(false)} title="Cancel this booking?">
+        <p className="mb-4 text-[14px] leading-[1.5] text-body">
+          We&apos;ll cancel booking #{order.id} and refund your ₹{order.booking_fee} booking fee to your original payment method (typically 3–5 working days). This can&apos;t be undone.
+        </p>
+        <PillButton loading={cancelling} onClick={doCancel}>Cancel &amp; refund ₹{order.booking_fee}</PillButton>
+        <button onClick={() => setConfirmCancel(false)} className="mt-2 w-full py-3 text-[15px] font-semibold text-muted">Keep my booking</button>
+      </Sheet>
     </PageShell>
   );
 }

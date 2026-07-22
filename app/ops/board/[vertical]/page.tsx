@@ -11,6 +11,13 @@ import { toast } from '@/lib/toast';
 
 const SECTIONS: OrderStatus[] = ['unassigned', 'assigned', 'on_the_way', 'in_progress', 'delivered', 'cancelled'];
 
+// Reschedule window helpers — admins may move a pickup only within today + the next 2 days,
+// the same bound customers book inside.
+const pad = (n: number) => String(n).padStart(2, '0');
+const isoOf = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const windowMinISO = () => isoOf(new Date());
+const windowMaxISO = () => { const d = new Date(); d.setDate(d.getDate() + 2); return isoOf(d); };
+
 function badge(status: string) {
   const label = STATUS_META[status]?.label ?? status;
   const tone = ['on_the_way', 'in_progress'].includes(status) ? 'bg-mint/50 text-ink'
@@ -55,6 +62,10 @@ function TravelBoard() {
   const [assignFor, setAssignFor] = useState<any | null>(null);
   const [cancelFor, setCancelFor] = useState<any | null>(null);
   const [reason, setReason] = useState('');
+  // Reschedule (travel): the order being edited + its draft date/time.
+  const [editFor, setEditFor] = useState<any | null>(null);
+  const [editDate, setEditDate] = useState('');
+  const [editTime, setEditTime] = useState('');
 
   const load = useCallback(async () => {
     // Payment gate: only ops-visible once the Razorpay webhook has verified payment
@@ -79,6 +90,22 @@ function TravelBoard() {
     if (error) { toast(error.message, 'error'); return; }
     invokeFn('send-push', { mode: 'status', order_type: vertical, order_id: order.id, status }).catch(() => {});
     load();
+  };
+
+  // Reschedule a travel pickup. Stamps pickup_changed_at (unlocks the customer's cancel+refund
+  // banner) and snapshots the original date/time on the FIRST change only. The track page updates
+  // live via its realtime subscription, so the customer sees the new time immediately.
+  const saveReschedule = async () => {
+    if (!editFor) return;
+    if (!editDate || !editTime) { toast('Pick both a date and a time.', 'error'); return; }
+    if (editDate < windowMinISO() || editDate > windowMaxISO()) { toast('Date must be within today + 2 days.', 'error'); return; }
+    if (editDate === editFor.date_of_travel && editTime === editFor.time_of_travel) { toast('That is already the pickup time.', 'info'); return; }
+    const patch: any = { date_of_travel: editDate, time_of_travel: editTime, pickup_changed_at: new Date().toISOString() };
+    if (!editFor.pickup_changed_at) { patch.original_date_of_travel = editFor.date_of_travel; patch.original_time_of_travel = editFor.time_of_travel; }
+    const { error } = await supabase.from(table).update(patch).eq('id', editFor.id);
+    if (error) { toast(error.message, 'error'); return; }
+    toast('Pickup time updated — the customer can review or cancel.', 'success');
+    setEditFor(null); setEditDate(''); setEditTime(''); load();
   };
 
   if (!orders) return <LoadingState label={`Loading ${vertical} orders…`} />;
@@ -130,6 +157,9 @@ function TravelBoard() {
                       {live && <Link href={`/ops/trip/${vertical}/${o.id}`} className="flex min-h-[44px] flex-1 items-center justify-center rounded-full bg-ink px-4 text-[13px] font-bold text-white">🗺 Trip screen</Link>}
                       {!isAdmin && step && !live && <Link href={`/ops/trip/${vertical}/${o.id}`} className="flex min-h-[44px] flex-1 items-center justify-center rounded-full bg-ink px-4 text-[13px] font-bold text-white">{step.label}</Link>}
                       {isAdmin && step && <ActBtn tone="secondary" className="flex-1" onClick={() => setStatus(o, step.next)}>→ {STATUS_META[step.next].label}</ActBtn>}
+                      {isAdmin && vertical === 'travel' && !['delivered', 'cancelled'].includes(o.status) && (
+                        <ActBtn tone="secondary" onClick={() => { setEditFor(o); setEditDate(o.date_of_travel ?? ''); setEditTime(o.time_of_travel ?? ''); }}>🕑 Edit time</ActBtn>
+                      )}
                       {isAdmin && !['delivered', 'cancelled'].includes(o.status) && <ActBtn tone="danger" onClick={() => setCancelFor(o)}>Cancel</ActBtn>}
                     </div>
                   </div>
@@ -152,6 +182,16 @@ function TravelBoard() {
           {suppliers.length === 0 && <p className="py-2 text-[14px] text-muted">No active suppliers. Add one in Team.</p>}
         </div>
         <button onClick={() => setAssignFor(null)} className="mt-4 w-full py-3 text-[15px] font-semibold text-muted">Close</button>
+      </Sheet>
+
+      <Sheet open={!!editFor} onClose={() => { setEditFor(null); setEditDate(''); setEditTime(''); }} title={editFor ? `Edit pickup — #${editFor.id}` : ''}>
+        {editFor && (
+          <p className="mb-3 text-[13px] text-muted">Current: {editFor.date_of_travel} · {editFor.time_of_travel}. Changing it lets the customer review or cancel for a refund.</p>
+        )}
+        <Field label="Pickup date" type="date" value={editDate} min={windowMinISO()} max={windowMaxISO()} onChange={e => setEditDate(e.target.value)} />
+        <Field label="Pickup time" type="time" value={editTime} onChange={e => setEditTime(e.target.value)} />
+        <PillButton onClick={saveReschedule}>Update pickup time</PillButton>
+        <button onClick={() => { setEditFor(null); setEditDate(''); setEditTime(''); }} className="mt-2 w-full py-3 text-[15px] font-semibold text-muted">Keep current time</button>
       </Sheet>
 
       <Sheet open={!!cancelFor} onClose={() => { setCancelFor(null); setReason(''); }} title={cancelFor ? `Cancel booking #${cancelFor.id}` : ''}>

@@ -57,6 +57,16 @@ export async function payForOrder(
   });
 }
 
+// Cancel a booking and auto-refund the paid booking fee via Razorpay. The server
+// (razorpay-refund) re-checks ownership + eligibility (paid, pre-trip, pickup-time changed),
+// so this is just the trigger. Throws with a human message on any rejection.
+export async function cancelAndRefund(
+  orderType: 'travel',
+  orderId: number,
+): Promise<{ refund_id: string; amount: number }> {
+  return invokeFn('razorpay-refund', { order_type: orderType, order_id: orderId });
+}
+
 export type PaidResult = 'paid' | 'failed' | 'pending';
 
 // SERVER-VERIFIED payment check. Polls the order's payment_status (flipped only by the

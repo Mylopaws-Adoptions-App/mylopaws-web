@@ -16,6 +16,9 @@ import { track } from '@/lib/analytics';
 import { Pet, computeFare, mapsLink, placeName } from '@/lib/types';
 
 const MODES = ['Intracity', 'Out Station', 'Train', 'Airline'];
+// Customers can book today + the next 2 days (3 date tiles). Keep in sync with the orders
+// insert trigger (orders_travel_window) that enforces the same bound server-side.
+const BOOKING_WINDOW_DAYS = 3;
 const DAY_ABBR = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const MON_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -116,7 +119,9 @@ function Travel() {
     })();
   }, [step]);
 
-  const days = useMemo(() => Array.from({ length: 10 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i); return d; }), []);
+  // Booking window: today + the next 2 days only. Trips are always near-term so an admin
+  // reschedule can never push a pickup far out. The DB enforces the same bound on insert.
+  const days = useMemo(() => Array.from({ length: BOOKING_WINDOW_DAYS }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i); return d; }), []);
   const slots = useMemo(() => {
     if (!dateISO) return [];
     const now = new Date();
