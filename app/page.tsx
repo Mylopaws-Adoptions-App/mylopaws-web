@@ -70,7 +70,7 @@ function Home() {
           <div className="relative z-10">
             <div className="text-4xl">✨</div>
             <h2 className="mt-3 text-[22px] font-bold">Dermacare</h2>
-            <p className="mt-1 text-[14px] leading-[1.5] text-white/90">12 medicated skin &amp; coat therapies by specialists. 4.9★ from 97 pawparents.</p>
+            <p className="mt-1 text-[14px] leading-[1.5] text-white/90">12 medicated skin &amp; coat therapies by specialists. 4.9★ from 2,000+ pawparents.</p>
             <span className="mt-4 inline-flex items-center gap-1 text-[15px] font-bold text-mint">See therapies <Icons.ChevronRight className="h-4 w-4" /></span>
           </div>
         </Link>
@@ -82,7 +82,7 @@ function Home() {
             <p className="text-[16px] font-bold text-ink">Mylopaws Homes
               <span className="ml-2 rounded-full bg-butter px-2 py-0.5 text-[10px] font-bold text-plum">NOW BOOKING</span>
             </p>
-            <p className="text-[13px] text-muted">Cat boarding by Joanna — vetted, cats-only home stays.</p>
+            <p className="text-[13px] text-muted">Cat boarding by Mylopaws — vetted, cats-only home stays.</p>
           </div>
           <Icons.ChevronRight className="h-5 w-5 shrink-0 text-plum" />
         </Link>

@@ -39,7 +39,7 @@ export default function CancellationPage() {
 
       <h2>4. Mylopaws Homes (cat boarding)</h2>
       <ul>
-        <li>Homes bookings are <strong>requests</strong>. No payment is taken until the boarding partner (e.g. Joanna) confirms availability and the final quote — so an unconfirmed request can be withdrawn at any time at no cost.</li>
+        <li>Homes bookings are <strong>requests</strong>. No payment is taken until the boarding partner (e.g. Joanna Cat Boarding) confirms availability and the final quote — so an unconfirmed request can be withdrawn at any time at no cost.</li>
         <li>For a confirmed stay, cancel <strong>at least 48 hours before check-in</strong> for a full refund of any advance paid.</li>
         <li>Cancellations within 48 hours of check-in, or early check-out during a stay, may be charged up to one night&apos;s rate (or the agreed deposit) to compensate the partner for the reserved space.</li>
         <li>If the <strong>boarding partner cancels</strong>, you receive a full refund and we will try to arrange a suitable alternative.</li>

@@ -47,10 +47,10 @@ export type Staff = { id: string; auth_user_id: string | null; name: string; ema
 export type HomesOrder = { id: number; provider: string; pawparent_name: string; furbaby_name: string; phone_number: string; check_in: string; check_out: string; nights: number; num_cats: number; rate_per_night: number; total_estimate: number; notes: string | null; status: string; cancel_reason: string | null; created_at: string };
 
 // Mylopaws Homes — cat boarding. Edit these in ONE place to change pricing/provider everywhere.
-export const HOMES_PROVIDER = 'Joanna Cat Boarding';
+export const HOMES_PROVIDER = 'Mylopaws Homes with Trusted Partners';
 // ₹ per cat, per night. Placed from a July-2026 Bengaluru market scan: budget starts ~₹600,
 // premium home boarding runs ₹800–1,200, cat hotels ₹1,000–1,800. ₹900 positions us as a
-// premium home stay without topping the market. Shown only as an ESTIMATE — Joanna confirms the
+// premium home stay without topping the market. Shown only as an ESTIMATE — Mylopaws Homes Team confirms the
 // final quote before any payment. Edit here to change it everywhere.
 export const HOMES_RATE_PER_NIGHT = 900;
 export const HOMES_WHATSAPP = '919887445671';
@@ -78,5 +78,12 @@ export const NEXT_STATUS: Partial<Record<OrderStatus, { next: OrderStatus; label
   in_progress: { next: 'delivered',   label: 'Mark Completed ✓' },
 };
 export const mapsLink = (lat: number, lng: number) => `https://www.google.com/maps?q=${lat},${lng}`;
-export const computeFare = (cfg: any, km: number) =>
-  Math.max(Number(cfg?.min_fare ?? 400), Math.round(Number(cfg?.base_fare ?? 300) + Number(cfg?.per_km ?? 30) * km));
+// Fare = distance rounded UP to the next multiple of `block_km` (default 5 km) × `block_rate`
+// (default ₹50 per km). e.g. 23 km → 25 km → ₹1,250; 8 km → 10 km → ₹500. Block size/rate are
+// app_config-overridable (fare_block_km / fare_block_rate) so pricing can change without a deploy.
+// The upfront booking fee is separate; the post-trip balance is (fare − booking_fee).
+export const computeFare = (cfg: any, km: number) => {
+  const blockKm = Number(cfg?.fare_block_km ?? 5);
+  const blockRate = Number(cfg?.fare_block_rate ?? 50);
+  return Math.ceil(Math.max(0, km) / blockKm) * blockKm * blockRate;
+};

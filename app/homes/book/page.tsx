@@ -82,14 +82,14 @@ function Book() {
         </div>
         {nights > 0 && <p className="text-sm font-semibold text-green-700">✓ {nights} night{nights > 1 ? 's' : ''}</p>}
         <Field label="Contact number *" value={phone} onChange={e => setPhone(e.target.value)} placeholder="WhatsApp number" />
-        <Field label="Anything Joanna should know?" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Diet, meds, temperament, litter habits…" />
+        <Field label="Anything our Team should know?" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Diet, meds, temperament, litter habits…" />
       </Card>
 
       <Card className="mt-4 !border-brass bg-[#FFF9EC]">
         <div className="flex justify-between text-sm"><span className="text-ink-soft">₹{HOMES_RATE_PER_NIGHT} × {nights || 0} night{nights === 1 ? '' : 's'} × {numCats} cat{numCats === 1 ? '' : 's'}</span></div>
         <div className="my-2 h-px bg-brass" />
         <div className="flex justify-between font-black"><span>Estimated total</span><span className="font-display text-lg text-magenta">₹{total}</span></div>
-        <p className="mt-2 text-xs text-ink-soft">Estimate only — no payment now. Joanna confirms the final quote and availability first.</p>
+        <p className="mt-2 text-xs text-ink-soft">Estimate only — no payment now. Our Team confirms the final quote and availability first.</p>
       </Card>
 
       {err && <p className="mt-3 text-sm font-semibold text-red-600">{err}</p>}

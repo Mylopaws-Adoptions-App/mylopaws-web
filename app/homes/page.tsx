@@ -5,7 +5,7 @@ import { Btn, Card } from '@/components/ui';
 import { PhotoBg } from '@/components/design';
 import { HOMES_PROVIDER, HOMES_RATE_PER_NIGHT } from '@/lib/types';
 
-// ---- Edit Joanna's details here ----
+// ---- Edit Mylopaws Homes details here ----
 const AREA = 'HSR Layout, Bengaluru';        // TODO: confirm exact locality
 const CAPACITY = 'Up to 4 cats at a time';   // TODO: confirm capacity
 const HIGHLIGHTS = [
@@ -39,7 +39,7 @@ function Homes() {
           </div>
         </div>
         <p className="mt-3 text-[15px] leading-relaxed text-ink">
-          Run by Joanna, a lifelong cat person, {HOMES_PROVIDER} gives your furbaby a quiet home away from home —
+          Run by Mylopaws Trusted Team, {HOMES_PROVIDER} gives your furbaby a quiet home away from home —
           plenty of cuddles, play, and daily updates so you can travel worry-free.
         </p>
       </Card>
@@ -68,7 +68,7 @@ function Homes() {
 
       <div className="mt-6 mb-10">
         <Link href="/homes/book"><Btn className="w-full">Request a stay →</Btn></Link>
-        <p className="mt-3 text-center text-xs text-ink-soft">Send your dates and we’ll confirm availability with Joanna, usually within a few hours.</p>
+        <p className="mt-3 text-center text-xs text-ink-soft">Send your dates and we’ll confirm availability with our boarding partners, usually within a few hours.</p>
       </div>
     </main>
   );
