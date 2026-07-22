@@ -1,6 +1,7 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
 import { ChevronLeft } from './icons';
+import { Portal } from './Portal';
 
 /**
  * Sheet — two presentations that share the same open/close lifecycle so exits
@@ -99,6 +100,7 @@ export function Sheet({
 
   if (isSearch) {
     return (
+      <Portal>
       <div className="fixed inset-0 z-50 flex justify-center">
         <div className={`absolute inset-0 bg-ink/40 ${backdropCls}`} onClick={onClose} />
         <div className={`absolute inset-0 mx-auto flex w-full max-w-[480px] flex-col bg-white ${closing ? 'mp-search-out' : 'mp-search-in'}`}>
@@ -111,10 +113,12 @@ export function Sheet({
           <div className="flex-1 overflow-y-auto px-5 pb-6">{children}</div>
         </div>
       </div>
+      </Portal>
     );
   }
 
   return (
+    <Portal>
     <div className="fixed inset-0 z-50 flex justify-center" onClick={onClose}>
       <div className={`absolute inset-0 bg-ink/40 ${backdropCls}`} />
       <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-[480px]"
@@ -139,5 +143,6 @@ export function Sheet({
         </div>
       </div>
     </div>
+    </Portal>
   );
 }
