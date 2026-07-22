@@ -26,6 +26,8 @@ function Track() {
   const [polls, setPolls] = useState(0); // Stage 3: "Confirming payment…" poll counter (2s × 15 ≈ 30s).
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locateShown, setLocateShown] = useState(false); // customer tapped "Locate driver" and we have a position to show
   const mapDiv = useRef<HTMLDivElement>(null);
   const mapObjs = useRef<{ map?: any; sup?: any; dest?: any }>({});
 
@@ -65,9 +67,12 @@ function Track() {
   }, [order, payment, polls, load]);
 
   const live = order && (order.status === 'on_the_way' || order.status === 'in_progress');
+  // Show the map when the trip is live, or when the customer tapped "Locate driver" and we have a
+  // position to render (last-known share). Same map/marker code powers both.
+  const showMap = !!(live || (locateShown && loc));
 
   useEffect(() => {
-    if (!live || !mapDiv.current) return;
+    if (!showMap || !mapDiv.current) return;
     loadMaps().then(g => {
       const dest = type === 'travel'
         ? (order.drop_lat ? { lat: order.drop_lat, lng: order.drop_lng } : null)
@@ -85,7 +90,7 @@ function Track() {
         mapObjs.current.map.panTo({ lat: loc.lat, lng: loc.lng });
       }
     });
-  }, [live, loc, order, type]);
+  }, [showMap, loc, order, type]);
 
   const badge = (s: string) => {
     const label = STATUS_META[s]?.label ?? s;
@@ -150,14 +155,38 @@ function Track() {
     }
   };
 
+  // Locate driver on request: pull the assigned supplier's most recent shared position. A web app
+  // can't force a phone to report GPS, so this only returns a fix when the driver is actively
+  // sharing (they stream while on the way / in progress). We show whatever's there with a freshness
+  // stamp, or an honest "not sharing yet" when there's nothing recent.
+  const locateDriver = async () => {
+    if (!order.supplier_assigned) { toast('No driver assigned yet.', 'info'); return; }
+    setLocating(true);
+    const { data: l } = await supabase.from('live_locations').select('*')
+      .eq('order_type', type).eq('order_id', Number(id)).maybeSingle();
+    setLocating(false);
+    trackEvent('locate_driver', { vertical: 'travel', found: !!l });
+    if (!l) { toast('Your driver isn’t sharing their location yet — you’ll see it live once they’re on the way.', 'info'); return; }
+    setLoc(l);
+    setLocateShown(true);
+    const ageMs = Date.now() - new Date(l.updated_at).getTime();
+    toast(ageMs < 90_000 ? 'Showing your driver’s live location 📍'
+      : `Last shared at ${new Date(l.updated_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} — may be out of date.`,
+      ageMs < 90_000 ? 'success' : 'info');
+  };
+
   return (
     <PageShell variant="plum" size="compact" title={`${type === 'travel' ? '🚗' : '✨'} Booking #${order.id}`}
       onBack={() => router.push('/bookings')} rightAction={badge(order.status)} sheetClassName="pb-10 mp-fade">
-      {live && (
+      {showMap && (
         <div className="relative -mt-2 mb-4 h-64 overflow-hidden rounded-card border border-line">
           <div ref={mapDiv} className="h-full w-full" />
           <div className="absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-white px-4 py-1.5 text-[12px] font-bold shadow-card">
-            {loc ? (stale ? <span className="text-danger">📡 GPS lost — last position</span> : <span className="text-success">🟢 Live</span>) : '⏳ Waiting for partner GPS…'}
+            {loc
+              ? (stale
+                ? <span className="text-danger">📡 Last seen {new Date(loc.updated_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                : <span className="text-success">🟢 Live</span>)
+              : '⏳ Waiting for partner GPS…'}
           </div>
         </div>
       )}
@@ -236,6 +265,12 @@ function Track() {
           <p className="mb-1 text-[13px] font-bold text-plum">Your Mylopaws partner</p>
           <p className="text-[16px] font-bold text-ink">{supplier.name}{supplier.vehicle_type ? ` · ${supplier.vehicle_type}` : ''}</p>
           <a href={`tel:${supplier.phone_number}`} className="mt-3 flex min-h-[52px] items-center justify-center rounded-btn bg-plum text-[15px] font-bold text-white transition active:scale-[0.98]">📞 Call {supplier.name.split(' ')[0]}</a>
+          {type === 'travel' && ['assigned', 'on_the_way', 'in_progress'].includes(order.status) && (
+            <button onClick={locateDriver} disabled={locating}
+              className="mt-2 flex min-h-[52px] w-full items-center justify-center rounded-btn border-[1.5px] border-plum text-[15px] font-bold text-plum transition active:scale-[0.98] disabled:opacity-60">
+              {locating ? 'Locating…' : '📍 Locate driver'}
+            </button>
+          )}
         </div>
       )}
 
