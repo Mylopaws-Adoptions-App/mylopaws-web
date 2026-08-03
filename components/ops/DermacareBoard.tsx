@@ -5,6 +5,7 @@ import { useStaff } from '@/components/OpsContext';
 import { supabase, invokeFn } from '@/lib/supabase';
 import { STATUS_META, Staff, aggressionMeta, fmtApptDateTime, navUrl, rupees } from '@/lib/types';
 import { Segmented, SelectChip, Sheet, LoadingState, EmptyState, ErrorState, Portal } from '@/components/design';
+import NewBookingAlert from '@/components/ops/NewBookingAlert';
 
 const PAST = ['delivered', 'cancelled'];
 const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -151,7 +152,10 @@ export default function DermacareBoard() {
 
   return (
     <main className="mx-auto max-w-2xl px-5 py-6 pb-24">
-      <h1 className="mb-4 text-[22px] font-extrabold tracking-[-0.5px] text-ink">✨ Dermacare Jobs</h1>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h1 className="text-[22px] font-extrabold tracking-[-0.5px] text-ink">✨ Dermacare Jobs</h1>
+        <NewBookingAlert orders={orders} vertical="dermacare" label="Dermacare" />
+      </div>
 
       <Segmented value={tab} onChange={v => { setTab(v as any); setSelected(new Set()); }}
         options={[{ value: 'upcoming', label: 'Upcoming' }, { value: 'past', label: 'Past' }]} />

@@ -7,6 +7,7 @@ import { supabase, invokeFn } from '@/lib/supabase';
 import { NEXT_STATUS, OrderStatus, STATUS_META, Staff } from '@/lib/types';
 import { PillButton, Field, Sheet, LoadingState } from '@/components/design';
 import DermacareBoard from '@/components/ops/DermacareBoard';
+import NewBookingAlert from '@/components/ops/NewBookingAlert';
 import { toast } from '@/lib/toast';
 
 const SECTIONS: OrderStatus[] = ['unassigned', 'assigned', 'on_the_way', 'in_progress', 'delivered', 'cancelled'];
@@ -113,7 +114,10 @@ function TravelBoard() {
 
   return (
     <main className="mx-auto max-w-2xl px-5 py-6">
-      <h1 className="text-[24px] font-extrabold tracking-[-0.5px] text-ink">{vertical === 'travel' ? '🚗 Travel' : '✨ Dermacare'} {isAdmin ? 'Board' : '— My Jobs'}</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-[24px] font-extrabold tracking-[-0.5px] text-ink">{vertical === 'travel' ? '🚗 Travel' : '✨ Dermacare'} {isAdmin ? 'Board' : '— My Jobs'}</h1>
+        <NewBookingAlert orders={orders} vertical="travel" label="travel" />
+      </div>
 
       {visible.map(section => {
         const rows = orders.filter(o => o.status === section);
