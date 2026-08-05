@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from '@/lib/toast';
 import { mediaFor } from '@/lib/media';
+import { supabase } from '@/lib/supabase';
+import { useStaff } from '@/components/OpsContext';
 
 /**
  * Ops in-app alert for newly PAID bookings. Drop into a board that holds a live list of
@@ -52,8 +54,22 @@ export default function NewBookingAlert({ orders, vertical, label }: {
 }) {
   const seen = useRef<Set<number> | null>(null);
   const [perm, setPerm] = useState<NotificationPermission>('default');
+  const { me } = useStaff();
 
   useEffect(() => { if (typeof Notification !== 'undefined') setPerm(Notification.permission); }, []);
+
+  // Presence heartbeat: while a board is open we stamp ops_presence every 30s. The notify-booking-sms
+  // edge function treats a fresh heartbeat as "a board is open" and skips the SMS (the in-app alert
+  // above already covers it). When every board is closed, the heartbeat goes stale and SMS fires.
+  useEffect(() => {
+    if (!me) return;
+    const beat = () => { void supabase.from('ops_presence').upsert({ staff_id: me.id, last_seen: new Date().toISOString() }, { onConflict: 'staff_id' }); };
+    beat();
+    const iv = setInterval(beat, 30_000);
+    const onVis = () => { if (document.visibilityState === 'visible') beat(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis); };
+  }, [me]);
 
   useEffect(() => {
     if (!orders) return;
