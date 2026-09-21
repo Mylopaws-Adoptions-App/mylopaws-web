@@ -71,10 +71,12 @@ Deno.serve(async (req: Request) => {
     const token = Deno.env.get('TWILIO_AUTH_TOKEN');
     if (!sid || !token) return json({ skipped: 'twilio_unconfigured' });
 
-    // Per-channel sender availability.
+    // Per-channel sender availability. A single messaging service can carry both SMS and WhatsApp
+    // senders; when the WA-specific env is unset we fall back to the shared SMS one so operators
+    // don't have to duplicate the same MG SID as two secrets.
     const smsMsgService = Deno.env.get('TWILIO_MESSAGING_SERVICE_SID');
     const smsFrom = Deno.env.get('TWILIO_SMS_FROM');
-    const waMsgService = Deno.env.get('TWILIO_WHATSAPP_MESSAGING_SERVICE_SID');
+    const waMsgService = Deno.env.get('TWILIO_WHATSAPP_MESSAGING_SERVICE_SID') || smsMsgService;
     const waFrom = Deno.env.get('TWILIO_WHATSAPP_FROM');
     const smsAvailable = wantSms && (smsMsgService || smsFrom);
     const waAvailable = wantWa && (waMsgService || waFrom);
