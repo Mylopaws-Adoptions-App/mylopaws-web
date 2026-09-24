@@ -59,14 +59,18 @@ export default function NewBookingAlert({ orders, vertical, label }: {
   useEffect(() => { if (typeof Notification !== 'undefined') setPerm(Notification.permission); }, []);
 
   // Presence heartbeat: while a board is open we stamp ops_presence every 30s. The notify-booking-sms
-  // edge function treats a fresh heartbeat as "a board is open" and skips the SMS (the in-app alert
-  // above already covers it). When every board is closed, the heartbeat goes stale and SMS fires.
+  // edge function treats a fresh heartbeat as "a board is open" and skips the WhatsApp (the in-app
+  // alert already covers it). When every board is closed, the heartbeat goes stale and WhatsApp fires.
   useEffect(() => {
     if (!me) return;
-    const beat = () => { void supabase.from('ops_presence').upsert({ staff_id: me.id, last_seen: new Date().toISOString() }, { onConflict: 'staff_id' }); };
-    beat();
-    const iv = setInterval(beat, 30_000);
-    const onVis = () => { if (document.visibilityState === 'visible') beat(); };
+    const beat = async () => {
+      const { error } = await supabase.from('ops_presence')
+        .upsert({ staff_id: me.id, last_seen: new Date().toISOString() }, { onConflict: 'staff_id' });
+      if (error) console.error('ops_presence heartbeat failed', error);
+    };
+    void beat();
+    const iv = setInterval(() => { void beat(); }, 30_000);
+    const onVis = () => { if (document.visibilityState === 'visible') void beat(); };
     document.addEventListener('visibilitychange', onVis);
     return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis); };
   }, [me]);
@@ -94,11 +98,29 @@ export default function NewBookingAlert({ orders, vertical, label }: {
   }, [orders, vertical, label]);
 
   const enable = async () => {
-    if (typeof Notification === 'undefined') { toast('This browser doesn’t support desktop notifications.', 'info'); return; }
-    const p = await Notification.requestPermission();
+    // Chime + toast always work while the board tab is open — they're independent of OS permission.
+    // Unlock the audio context now so later chimes aren't blocked by the mobile-browser autoplay rule.
+    chime();
+    if (typeof Notification === 'undefined') {
+      toast('In-app alerts (chime + banner) are on. This browser doesn’t support system notifications, so leave the board tab open to catch new bookings.', 'success', 6000);
+      setPerm('granted' as NotificationPermission);
+      return;
+    }
+    if (Notification.permission === 'granted') {
+      toast('Alerts are on 🔔', 'success', 3000);
+      setPerm('granted');
+      return;
+    }
+    // Preflight: on mobile Chrome the OS prompt can render as a tiny bell in the address bar, easy
+    // to miss. Priming the user avoids the "nothing happened" confusion.
+    toast('Your browser will ask for notification permission — tap Allow when the prompt appears.', 'info', 5000);
+    let p: NotificationPermission;
+    try { p = await Notification.requestPermission(); }
+    catch { p = Notification.permission; }
     setPerm(p);
-    if (p === 'granted') { chime(); toast('New-booking alerts are on 🔔', 'success'); }
-    else toast('Alerts are blocked — turn on notifications for this site in your browser settings.', 'info');
+    if (p === 'granted') { chime(); toast('Alerts are on 🔔 System notifications will reach you even when the tab is backgrounded.', 'success', 5000); }
+    else if (p === 'denied') { toast('System notifications are blocked. In-app alerts still work while this tab is open — or re-enable in your browser site settings.', 'info', 6000); }
+    else { toast('Prompt dismissed. In-app alerts (chime + banner) still work while this tab is open.', 'info', 5000); }
   };
 
   if (perm === 'granted') return <span className="shrink-0 text-[12px] font-semibold text-success">🔔 Alerts on</span>;
