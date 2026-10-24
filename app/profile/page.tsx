@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import AuthGate, { useSession } from '@/components/AuthGate';
 import { supabase } from '@/lib/supabase';
 import { Pet, Address } from '@/lib/types';
-import PetPicker from '@/components/PetPicker';
+import Link from 'next/link';
+import { PetPill } from '@/components/shop/PetSheet';
 import PlaceInput, { PickedPlace } from '@/components/PlaceInput';
 import { PageShell, PillButton, Field, Skeleton } from '@/components/design';
 import { toast } from '@/lib/toast';
@@ -86,14 +87,28 @@ function Profile() {
             <div key={p.id} className="flex items-center justify-between rounded-card bg-surface-alt p-3">
               <div className="min-w-0">
                 <p className="font-bold text-ink">{p.name} {p.rescue ? '🏳️' : ''}</p>
-                <p className="text-[12px] text-muted">{[p.breed, p.age_years ? `${p.age_years} yrs` : null, p.aggressive ? '⚠️ can be aggressive' : null].filter(Boolean).join(' · ') || '—'}</p>
+                <p className="text-[12px] text-muted">{[p.species === 'cat' ? '🐱 Cat' : p.species === 'dog' ? '🐶 Dog' : null, p.breed, p.weight_kg ? `${p.weight_kg} kg` : null, p.age_years ? `${p.age_years} yrs` : null].filter(Boolean).join(' · ') || '—'}</p>
               </div>
               <button onClick={async () => { await supabase.from('pets').delete().eq('id', p.id); loadAll(); toast(`${p.name} removed`, 'info'); }}
                 className="min-h-[44px] shrink-0 rounded-full px-3 text-[13px] font-bold text-danger transition active:scale-95">Remove</button>
             </div>
           ))}
         </div>
-        <div className="mt-3"><PetPicker pets={[]} selected={null} onSelect={() => {}} onPetAdded={loadAll} userId={session!.user.id} /></div>
+        <div className="mt-3"><PetPill /></div>
+      </Group>
+
+      <Group title="Shopping 🛍️">
+        <div className="rounded-card border border-line bg-white shadow-card">
+          {[
+            { href: '/orders', label: 'My orders' },
+            { href: '/ask', label: 'Ask Mylo' },
+            { href: '/bookings', label: 'Past Travel & Dermacare bookings' },
+          ].map((r) => (
+            <Link key={r.href} href={r.href} className="flex min-h-[52px] items-center justify-between border-b border-line px-4 text-[15px] font-semibold text-ink last:border-0">
+              {r.label}<span className="text-plum">›</span>
+            </Link>
+          ))}
+        </div>
       </Group>
 
       <Group title="Saved addresses 📍">

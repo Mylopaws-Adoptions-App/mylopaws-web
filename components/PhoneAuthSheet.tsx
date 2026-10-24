@@ -26,7 +26,7 @@ import { Sheet, PillButton } from '@/components/design';
 const OTP_LEN = 6;
 const RESEND_SECONDS = 30;
 
-export default function PhoneAuthSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+export default function PhoneAuthSheet({ open, onClose, onVerified, title }: { open: boolean; onClose: () => void; onVerified?: () => void; title?: string }) {
   const router = useRouter();
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phone, setPhone] = useState(''); // 10-digit local part only; +91 is fixed
@@ -71,13 +71,15 @@ export default function PhoneAuthSheet({ open, onClose }: { open: boolean; onClo
       return;
     }
     track('login', { method: 'phone' });
-    // Session is set; AuthGate/onAuthStateChange picks it up. Head to the home surface.
+    // Session is set; onAuthStateChange picks it up. Callers in the middle of a flow (checkout)
+    // stay where they are; otherwise head to the home surface.
+    if (onVerified) { setBusy(false); onVerified(); return; }
     router.replace('/');
   };
 
   return (
     <Sheet open={open} onClose={onClose} align="search" closeLabel="Close sign in"
-      title={step === 'phone' ? 'Sign in / Sign up' : 'Enter the code'}>
+      title={step === 'phone' ? (title ?? 'Sign in / Sign up') : 'Enter the code'}>
       {step === 'phone' ? (
         <>
           <p className="-mt-1 mb-4 text-[14px] leading-[1.5] text-body">

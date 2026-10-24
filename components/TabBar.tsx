@@ -1,30 +1,19 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { HomeIcon, CarIcon, SparkleIcon, ListIcon, UserIcon } from '@/components/design/nav-icons';
+import { HomeIcon, BagIcon, BoxIcon, UserIcon, PawIcon } from '@/components/design/nav-icons';
 
-// Bottom tab bar (SKILL section 5): 5 tabs, white bg, hairline top border, ~64px.
-// Icon above 11px label. Active = plum, inactive = muted. Constrained to the 480px phone
-// shell and centered so it lines up with PageShell.
-//
-// CHANGE 4: this is mounted ONCE in app/layout.tsx, OUTSIDE the animated `.mp-page` route
-// template. Rendering a `position: fixed` element inside a transformed/animated ancestor makes
-// it resolve against that ancestor (containing-block trap) instead of the viewport, which is why
-// the bar could scroll away on some pages (e.g. Homes detail). Mounting it at the layout root
-// guarantees it is always fixed to the viewport, on every customer screen, regardless of scroll.
+// Bottom tab bar for the Mylopaws Shop app: Home · Shop · Ask Mylo (raised centre) · Orders · Profile.
+// Mounted ONCE in app/layout.tsx, outside the animated `.mp-page` template, so `position: fixed`
+// always resolves against the viewport. Travel/Dermacare pages still exist but are off the nav.
 const tabs = [
   { href: '/', label: 'Home', Icon: HomeIcon, exact: true },
-  { href: '/travel', label: 'Travel', Icon: CarIcon },
-  { href: '/dermacare', label: 'Dermacare', Icon: SparkleIcon },
-  { href: '/bookings', label: 'Bookings', Icon: ListIcon },
+  { href: '/shop', label: 'Shop', Icon: BagIcon, match: ['/shop', '/p/'] },
+  { href: '/ask', label: 'Ask Mylo', Icon: PawIcon, centre: true },
+  { href: '/orders', label: 'Orders', Icon: BoxIcon },
   { href: '/profile', label: 'Profile', Icon: UserIcon },
 ];
 
-// Persistent bottom nav on EVERY customer route (Stage 6) — including deep booking steps
-// (/travel, /dermacare/book) and /track. Booking flows keep their own fixed CTA, which PageShell
-// stacks directly ABOVE this bar. We hide the bar only on non-customer surfaces: auth/login, the
-// ops app, and the standalone legal pages. Exported so PageShell reserves space + offsets its CTA
-// consistently (single source of truth for when the bar is present).
 const HIDE_TABBAR = ['/login', '/auth', '/ops', '/terms', '/privacy', '/cancellation'];
 export function showTabBar(path: string | null): boolean {
   if (!path) return false;
@@ -35,18 +24,24 @@ export default function TabBar() {
   const path = usePathname();
   if (!path || !showTabBar(path)) return null;
   return (
-    <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-[480px] -translate-x-1/2 border-t border-line bg-white pb-[env(safe-area-inset-bottom)]">
+    <nav aria-label="Main" className="fixed bottom-0 left-1/2 z-40 w-full max-w-[480px] -translate-x-1/2 border-t border-line bg-white pb-[env(safe-area-inset-bottom)]">
       <div className="flex">
-        {tabs.map(({ href, label, Icon, exact }) => {
-          const active = exact ? path === href : path === href || path.startsWith(href + '/');
+        {tabs.map(({ href, label, Icon, exact, centre, match }) => {
+          const active = exact ? path === href : (match ?? [href]).some((m) => path === m || path.startsWith(m.endsWith('/') ? m : m + '/'));
+          if (centre) {
+            return (
+              <Link key={href} href={href} aria-current={active ? 'page' : undefined}
+                className="flex min-h-[56px] flex-1 flex-col items-center justify-end gap-1 pb-2 text-[11px] font-semibold text-plum">
+                <span className={`-mt-5 flex h-12 w-12 items-center justify-center rounded-full shadow-floating ring-4 ring-white ${active ? 'bg-plum-dark' : 'bg-plum'} text-white`}>
+                  <Icon className="h-[24px] w-[24px]" />
+                </span>
+                {label}
+              </Link>
+            );
+          }
           return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 py-2 text-[11px] font-semibold ${
-                active ? 'text-plum' : 'text-muted'
-              }`}
-            >
+            <Link key={href} href={href} aria-current={active ? 'page' : undefined}
+              className={`flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 py-2 text-[11px] font-semibold ${active ? 'text-plum' : 'text-muted'}`}>
               <Icon className="h-[22px] w-[22px]" />
               {label}
             </Link>

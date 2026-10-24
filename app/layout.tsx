@@ -4,6 +4,8 @@ import './globals.css';
 import { mediaFor } from '@/lib/media';
 import TabBar from '@/components/TabBar';
 import AnalyticsClickTracker from '@/components/AnalyticsClickTracker';
+import ShopProvider from '@/components/shop/ShopProvider';
+import CartBar from '@/components/shop/CartBar';
 
 const LOGO = mediaFor('brandLogo');
 // GA4 Measurement ID. Public (non-secret) value, so a literal default keeps analytics working in
@@ -11,13 +13,13 @@ const LOGO = mediaFor('brandLogo');
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-GTTJWW777L';
 
 export const metadata: Metadata = {
-  title: 'Mylopaws — Pet Travel & Dermacare, Bengaluru',
-  description: 'Pet-friendly cabs with live tracking and 12 specialised skin & coat therapies. Book in minutes.',
+  title: 'Mylopaws Shop: pet medicines & care, delivered in Bangalore',
+  description: 'Tick & flea care, skin and coat care, supplements, food and vet medicines for dogs and cats. Ask Mylo, our AI shopping assistant, and get it delivered across Bangalore.',
   metadataBase: new URL('https://www.mylopaws.app'),
   icons: { icon: LOGO, shortcut: LOGO, apple: LOGO },
   openGraph: {
-    title: 'Mylopaws 🐾',
-    description: 'Pet travel & dermacare, made effortless.',
+    title: 'Mylopaws Shop 🐾',
+    description: 'Pet medicines and care, picked with Mylo and delivered across Bangalore.',
     url: 'https://www.mylopaws.app',
     images: [{ url: LOGO, alt: 'Mylopaws' }],
   },
@@ -50,8 +52,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         viewport and it never scrolls away. It self-hides on routes that shouldn't show it.
       */}
       <body className="font-sans text-ink antialiased pb-16 sm:pb-0">
-        {children}
-        <TabBar />
+        <ShopProvider>
+          {children}
+          <CartBar />
+          <TabBar />
+        </ShopProvider>
         {/* GA4: enhanced measurement (page_view on SPA route changes, scroll, outbound, forms,
             downloads) + AnalyticsClickTracker for a custom `interaction` event on every click. */}
         <AnalyticsClickTracker />

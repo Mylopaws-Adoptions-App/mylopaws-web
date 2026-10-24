@@ -24,6 +24,23 @@ export const UserIcon = (p: P) => (
   <svg {...svg(p)}><circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.3 3.1-5.5 7-5.5s7 2.2 7 5.5" /></svg>
 );
 
+// ── Shop tab icons ──
+export const BagIcon = (p: P) => (
+  <svg {...svg(p)}><path d="M5 8h14l-1 12H6L5 8z" /><path d="M9 8V6.5a3 3 0 016 0V8" /></svg>
+);
+export const BoxIcon = (p: P) => (
+  <svg {...svg(p)}><path d="M3.5 7.5L12 3l8.5 4.5v9L12 21l-8.5-4.5v-9z" /><path d="M3.5 7.5L12 12l8.5-4.5M12 12v9" /></svg>
+);
+export const PawIcon = (p: P) => (
+  <svg {...svg(p)}><ellipse cx="12" cy="15.5" rx="4" ry="3.5" /><circle cx="6.5" cy="10.5" r="1.6" /><circle cx="9.8" cy="7" r="1.6" /><circle cx="14.2" cy="7" r="1.6" /><circle cx="17.5" cy="10.5" r="1.6" /></svg>
+);
+export const SendIcon = (p: P) => (
+  <svg {...svg(p)}><path d="M5 12l15-7-5 15-3-6-7-2z" /></svg>
+);
+export const CartIcon = (p: P) => (
+  <svg {...svg(p)}><path d="M3 4h2l2.2 11h10.6L20 8H6.2" /><circle cx="9" cy="19" r="1.3" /><circle cx="17" cy="19" r="1.3" /></svg>
+);
+
 // ── Ops bottom-nav icons ──
 export const CatIcon = (p: P) => (
   <svg {...svg(p)}><path d="M5 10V5l3 2.2a7 7 0 018 0L19 5v5" /><path d="M5 10a7 7 0 0014 0v3a7 7 0 01-14 0z" /><path d="M9.5 13.5h.01M14.5 13.5h.01" /><path d="M12 15.5v1.2" /></svg>
