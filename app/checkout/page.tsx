@@ -99,9 +99,9 @@ export default function Checkout() {
 
   if (done) {
     return (
-      <div className="mx-auto min-h-screen max-w-[480px] bg-surface-alt pb-28">
+      <div className="mx-auto min-h-screen max-w-[480px] bg-[#FAF8F9] pb-28">
         {Bar}
-        <div className="m-3 rounded-[10px] bg-white p-5 shadow-card">
+        <div className="m-3 rounded-2xl border border-[#EEE7EB] bg-white p-5">
           <p className="flex items-center gap-2 text-[18px] font-bold text-success"><Icons.Check className="h-6 w-6" /> Order placed, thank you!</p>
           <p className="mt-2 text-[14px] text-body">Order <b>#{done.order_number}</b> · {inr(done.total)} paid</p>
           <p className="mt-1 text-[14px] text-body">{done.pickup ? 'We’ll WhatsApp you when it’s ready to collect from our HSR Layout store.' : <>Arriving <b>{done.promised ?? 'on the next run'}</b>, {delivery.window}. Updates on WhatsApp.</>}</p>
@@ -116,18 +116,18 @@ export default function Checkout() {
   }
 
   if (!cart.length) {
-    return <div className="mx-auto min-h-screen max-w-[480px] bg-surface-alt">{Bar}<p className="p-6 text-center text-[14px] text-body">Your cart is empty. <Link href="/" className="font-semibold text-plum">Continue shopping</Link></p></div>;
+    return <div className="mx-auto min-h-screen max-w-[480px] bg-[#FAF8F9]">{Bar}<p className="p-6 text-center text-[14px] text-body">Your cart is empty. <Link href="/" className="font-semibold text-plum">Continue shopping</Link></p></div>;
   }
 
   return (
-    <div className="mx-auto min-h-screen max-w-[480px] bg-surface-alt pb-44">
+    <div className="mx-auto min-h-screen max-w-[480px] bg-[#FAF8F9] pb-36">
       {Bar}
       <div className="space-y-3 p-3">
         <Step n={1} title="Delivery">
           <div className="grid grid-cols-2 gap-2">
             {(['delivery', 'pickup'] as const).filter((f) => f === 'delivery' || delivery.pickup_enabled).map((f) => (
               <button key={f} type="button" onClick={() => setFul(f)} aria-pressed={ful === f}
-                className={`rounded-[10px] border-2 p-3 text-left ${ful === f ? 'border-plum bg-plum-soft' : 'border-line'}`}>
+                className={`rounded-2xl border-2 p-3 text-left ${ful === f ? 'border-plum bg-plum-soft' : 'border-line'}`}>
                 <span className="block text-[14px] font-bold text-ink">{f === 'delivery' ? '🚚 Home delivery' : '🏪 Store pickup'}</span>
                 <span className="block text-[12px] text-muted">{f === 'delivery' ? (subtotal >= delivery.free_min ? 'FREE' : `${inr(delivery.fee)} · FREE over ${inr(delivery.free_min)}`) : 'FREE · HSR Layout'}</span>
               </button>
@@ -136,7 +136,7 @@ export default function Checkout() {
           <Field label="Name for the order" value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" autoComplete="name" className="mt-3" />
           {ful === 'delivery' ? (
             !editAddr ? (
-              <div className="rounded-[10px] border border-line p-3 text-[14px] text-body">
+              <div className="rounded-2xl border border-line p-3 text-[14px] text-body">
                 <p className="font-semibold text-ink">{name || 'Deliver to'}</p>
                 <p>{addr.line1}{addr.landmark ? `, ${addr.landmark}` : ''}, Bengaluru {addr.pincode}</p>
                 <button type="button" onClick={() => setEditAddr(true)} className="mt-1 text-[13px] font-semibold text-plum">Change</button>
@@ -187,18 +187,18 @@ export default function Checkout() {
           <Link href="/cart" className="text-[13px] font-semibold text-plum">Change items</Link>
         </Step>
 
-        <section className="rounded-[10px] bg-white p-4 text-[14px] shadow-card">
+        <section className="rounded-2xl border border-[#EEE7EB] bg-white p-4 text-[14px]">
           <div className="flex justify-between"><span className="text-muted">Items</span><span>{inr(subtotal)}</span></div>
           <div className="flex justify-between"><span className="text-muted">Delivery</span><span>{fee ? inr(fee) : 'FREE'}</span></div>
-          <div className="mt-2 flex justify-between border-t border-line pt-2 text-[17px] font-bold text-danger"><span>Order Total</span><span>{inr(total)}</span></div>
+          <div className="mt-2 flex justify-between border-t border-line pt-2 text-[17px] font-bold text-ink"><span>Order total</span><span>{inr(total)}</span></div>
           <p className="mt-2 text-[11px] text-muted">By placing your order you agree to our <Link href="/terms" className="underline">conditions</Link> and <Link href="/cancellation" className="underline">cancellation policy</Link>. Help: <a href={`https://wa.me/${support}`} className="underline" target="_blank" rel="noreferrer">WhatsApp</a>.</p>
         </section>
       </div>
 
-      <div className="fixed bottom-[calc(56px_+_env(safe-area-inset-bottom))] left-1/2 z-30 w-full max-w-[480px] -translate-x-1/2 border-t border-line bg-white px-3 py-2.5">
+      <div className="fixed bottom-0 left-1/2 z-30 w-full max-w-[480px] -translate-x-1/2 border-t border-[#EEE7EB] bg-white/95 px-4 pt-2.5 pb-[calc(env(safe-area-inset-bottom)+10px)] backdrop-blur">
         {err && <p className="mb-1.5 text-[13px] font-medium text-danger" role="alert">{err}</p>}
         <button type="button" onClick={place} disabled={busy}
-          className="flex min-h-[50px] w-full items-center justify-center gap-2 rounded-full bg-butter text-[16px] font-bold text-ink disabled:opacity-60">
+          className="flex min-h-[50px] w-full items-center justify-center gap-2 rounded-full bg-plum text-[16px] font-semibold text-white disabled:opacity-60">
           {busy ? 'Placing order…' : session ? `Place order & pay ${inr(total)}` : 'Sign in to place order'}
         </button>
       </div>
@@ -211,7 +211,7 @@ export default function Checkout() {
 // Defined at module level so inputs inside keep focus while typing.
 function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-[10px] bg-white p-4 shadow-card">
+    <section className="rounded-2xl border border-[#EEE7EB] bg-white p-4">
       <h2 className="text-[16px] font-bold text-ink"><span className="mr-2 text-muted">{n}</span>{title}</h2>
       <div className="mt-2">{children}</div>
     </section>

@@ -70,8 +70,8 @@ export default function OrdersPage() {
 
   if (authReady && !session) {
     return (
-      <div className="mx-auto min-h-screen max-w-[480px] bg-surface-alt pb-28">
-        <Header categories={false} />
+      <div className="mx-auto min-h-screen max-w-[480px] bg-[#FAF8F9] pb-28">
+        <Header />
         <h1 className="px-4 pt-4 text-[22px] font-bold text-ink">Your Orders</h1>
         <EmptyState emoji="📦" title="Sign in to see your orders" sub="Use the phone number you ordered with." action={{ label: 'Sign in', onClick: () => setAuthOpen(true) }} />
         <PhoneAuthSheet open={authOpen} onClose={() => setAuthOpen(false)} onVerified={() => setAuthOpen(false)} />
@@ -80,8 +80,8 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="mx-auto min-h-screen max-w-[480px] bg-surface-alt pb-28">
-      <Header categories={false} />
+    <div className="mx-auto min-h-screen max-w-[480px] bg-[#FAF8F9] pb-28">
+      <Header />
       <h1 className="px-4 pt-4 text-[22px] font-bold text-ink">Your Orders</h1>
       <div className="p-3">
       {err ? <ErrorState onRetry={load} /> : !orders ? <SkeletonList count={3} lines={3} /> : !orders.length ? (
@@ -121,7 +121,7 @@ export default function OrdersPage() {
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" onClick={() => buyAgain(o)} className="min-h-[40px] rounded-full bg-butter px-4 text-[13px] font-bold text-ink">Buy it again</button>
+                  <button type="button" onClick={() => buyAgain(o)} className="min-h-[40px] rounded-full bg-plum px-4 text-[13px] font-semibold text-white">Buy it again</button>
                   {o.tracking_url && <a href={o.tracking_url} target="_blank" rel="noreferrer" className="flex min-h-[40px] items-center rounded-full border-[1.5px] border-plum px-4 text-[13px] font-bold text-plum">Track</a>}
                   <a href={`https://wa.me/${support}?text=${encodeURIComponent(`Hi Mylopaws, about order #${o.order_number}`)}`} target="_blank" rel="noreferrer" className="flex min-h-[40px] items-center rounded-full border border-line px-4 text-[13px] font-semibold text-body">Help</a>
                   {o.can_cancel && confirming !== o.id && <button type="button" onClick={() => setConfirming(o.id)} className="min-h-[40px] px-2 text-[13px] font-semibold text-danger">Cancel</button>}

@@ -6,9 +6,10 @@ import { track } from '@/lib/analytics';
 import { useShop } from './ShopProvider';
 import { AddControl, Price, ProductImage, ProductRow } from './Product';
 import PhoneAuthSheet from '@/components/PhoneAuthSheet';
-import { PawIcon, SendIcon } from '@/components/design/nav-icons';
-import { Icons, Portal } from '@/components/design';
-import { PROBLEMS, Product, chatSid, inr, readLS, shopFn, writeLS } from '@/lib/shop';
+import { ArrowUp, MessageCircle, RotateCcw, Sparkles, X } from 'lucide-react';
+import { STARTERS } from './ui';
+import { Portal } from '@/components/design';
+import { Product, chatSid, inr, readLS, shopFn, writeLS } from '@/lib/shop';
 
 type Card =
   | { type: 'products'; heading?: string; items: Product[] }
@@ -36,7 +37,7 @@ export function MyloProvider({ children }: { children: React.ReactNode }) {
       {children}
       {open && (
         <Portal>
-          <div className="fixed inset-0 z-50 flex justify-center bg-black/40" onClick={() => setOpen(null)}>
+          <div className="fixed inset-0 z-50 flex justify-center bg-black/40 backdrop-blur-[2px]" onClick={() => setOpen(null)}>
             <div className="mp-search-in mt-[6vh] flex h-[94dvh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-[24px] bg-white" onClick={(e) => e.stopPropagation()}>
               <MyloChat key={JSON.stringify(open)} prompt={open.prompt} product={open.product} onClose={() => setOpen(null)} />
             </div>
@@ -90,27 +91,38 @@ export default function MyloChat({ prompt, product, onClose, fullPage }: { promp
   const reset = () => { persist([]); setFocus(null); try { localStorage.removeItem('mp_chat_sid'); } catch { /* ignore */ } };
   const starters = focus
     ? [`Is ${focus.title.split(' - ')[0]} right for my pet?`, 'How is it used?', 'Any cheaper alternatives?', 'Compare with similar products']
-    : PROBLEMS.slice(0, 6).map((p) => p.prompt);
+    : null;
 
   return (
     <div className={`flex flex-col bg-white ${fullPage ? 'min-h-[100dvh]' : 'h-full'}`}>
       <div className={`flex items-center gap-3 bg-plum px-4 pb-3 text-white ${fullPage ? 'sticky top-0 z-20 pt-[calc(0.75rem+env(safe-area-inset-top))]' : 'pt-3'}`}>
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-plum"><PawIcon className="h-5 w-5" /></span>
+        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15"><Sparkles className="h-5 w-5 text-butter" /></span>
         <div className="min-w-0 flex-1">
-          <p className="text-[17px] font-bold leading-tight">Ask Mylo</p>
-          <p className="text-[12px] text-white/80">AI shopping assistant · answers can be wrong, check labels</p>
+          <p className="text-[16px] font-semibold leading-tight">Mylo</p>
+          <p className="text-[11.5px] text-white/70">AI pet-care shopper · check labels, follow your vet</p>
         </div>
-        {msgs.length > 0 && <button type="button" onClick={reset} className="rounded-full bg-white/15 px-3 py-1.5 text-[12px] font-bold">New</button>}
-        {onClose && <button type="button" onClick={onClose} aria-label="Close" className="flex h-9 w-9 items-center justify-center"><Icons.Close className="h-5 w-5" /></button>}
+        {msgs.length > 0 && <button type="button" onClick={reset} aria-label="New chat" className="flex h-9 items-center gap-1 rounded-full bg-white/10 px-3 text-[12px] font-semibold"><RotateCcw className="h-3.5 w-3.5" />New</button>}
+        {onClose && <button type="button" onClick={onClose} aria-label="Close" className="flex h-9 w-9 items-center justify-center"><X className="h-5 w-5" /></button>}
       </div>
 
-      <div className={`min-h-0 flex-1 overflow-y-auto px-4 pt-4 ${fullPage ? 'pb-[calc(150px_+_env(safe-area-inset-bottom))]' : 'pb-4'}`}>
+      <div className={`min-h-0 flex-1 overflow-y-auto px-4 pt-4 ${fullPage ? 'pb-[calc(96px_+_env(safe-area-inset-bottom))]' : 'pb-4'}`}>
         {msgs.length === 0 && (
           <div className="mp-fade">
-            <p className="text-[14px] leading-[1.55] text-body">{focus ? <>Ask anything about <b>{focus.title}</b>.</> : 'Tell me what’s going on with your pet, or name a product. I’ll show options, compare them and add them to your cart.'}</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {starters.map((s) => <button key={s} type="button" onClick={() => send(s)} className="min-h-[38px] rounded-full border border-plum/30 bg-plum-soft px-3 text-left text-[13px] font-semibold text-plum">{s}</button>)}
-            </div>
+            <p className="text-[20px] font-semibold leading-snug tracking-tight text-ink">{focus ? 'What would you like to know?' : 'Hi! What’s going on with your pet?'}</p>
+            <p className="mt-1 text-[13.5px] leading-[1.55] text-muted">{focus ? <>Ask anything about <b className="font-medium text-body">{focus.title}</b>.</> : 'Describe the problem or name a product. I’ll suggest options, compare them and add them to your cart.'}</p>
+            {starters ? (
+              <div className="mt-4 flex flex-col gap-2">
+                {starters.map((s) => <button key={s} type="button" onClick={() => send(s)} className="min-h-[44px] rounded-2xl border border-[#EEE7EB] px-3.5 text-left text-[13.5px] font-medium text-ink active:bg-[#F7F4F6]">{s}</button>)}
+              </div>
+            ) : (
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                {STARTERS.map(({ l, prompt: q, Icon }) => (
+                  <button key={l} type="button" onClick={() => send(q)} className="flex min-h-[64px] flex-col items-start justify-center gap-1.5 rounded-2xl border border-[#EEE7EB] px-3 text-left text-[13px] font-medium text-ink active:bg-[#F7F4F6]">
+                    <Icon className="h-[18px] w-[18px] text-plum" />{l}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
         <div className="space-y-3">
@@ -120,14 +132,14 @@ export default function MyloChat({ prompt, product, onClose, fullPage }: { promp
                 <p className="max-w-[82%] whitespace-pre-wrap rounded-[18px] rounded-br-md bg-plum px-4 py-2.5 text-[14px] leading-[1.5] text-white">{m.text}</p>
               ) : (
                 <div className="space-y-2.5">
-                  {m.text && <p className={`max-w-[92%] whitespace-pre-wrap rounded-[18px] rounded-bl-md px-4 py-2.5 text-[14px] leading-[1.55] ${m.error ? 'bg-danger/10 text-danger' : 'bg-surface-alt text-body'}`}>{m.text}</p>}
+                  {m.text && <p className={`max-w-[92%] whitespace-pre-wrap rounded-[18px] rounded-bl-md px-4 py-2.5 text-[14px] leading-[1.55] ${m.error ? 'bg-danger/10 text-danger' : 'bg-[#F5F2F4] text-body'}`}>{m.text}</p>}
                   {(m.cards ?? []).map((c, i) => <CardView key={i} c={c} onSignin={() => setAuthOpen(true)} onNavigate={onClose} />)}
                 </div>
               )}
             </div>
           ))}
           {busy && (
-            <div className="inline-flex items-center gap-1.5 rounded-[18px] bg-surface-alt px-4 py-3" role="status" aria-label="Mylo is typing">
+            <div className="inline-flex items-center gap-1.5 rounded-[18px] bg-[#F5F2F4] px-4 py-3" role="status" aria-label="Mylo is typing">
               {[0, 1, 2].map((i) => <span key={i} className="h-2 w-2 animate-bounce rounded-full bg-plum/60" style={{ animationDelay: `${i * 120}ms` }} />)}
             </div>
           )}
@@ -135,19 +147,19 @@ export default function MyloChat({ prompt, product, onClose, fullPage }: { promp
         </div>
       </div>
 
-      <div className={`border-t border-line bg-white px-3 pb-2.5 pt-2 ${fullPage ? 'fixed bottom-[calc(56px_+_env(safe-area-inset-bottom))] left-1/2 z-30 w-full max-w-[480px] -translate-x-1/2' : 'pb-[calc(0.75rem+env(safe-area-inset-bottom))]'}`}>
+      <div className={`border-t border-[#EEE7EB] bg-white px-3 pb-2.5 pt-2 ${fullPage ? 'fixed bottom-0 left-1/2 z-30 w-full max-w-[480px] -translate-x-1/2 pb-[calc(env(safe-area-inset-bottom)+10px)]' : 'pb-[calc(0.75rem+env(safe-area-inset-bottom))]'}`}>
         {focus && (
           <div className="mb-2 flex items-center gap-2 rounded-full bg-plum-soft px-3 py-1.5 text-[12px] text-plum">
             <span className="min-w-0 flex-1 truncate">About: <b>{focus.title}</b></span>
-            <button type="button" onClick={() => setFocus(null)} aria-label="Stop asking about this product"><Icons.Close className="h-4 w-4" /></button>
+            <button type="button" onClick={() => setFocus(null)} aria-label="Stop asking about this product"><X className="h-4 w-4" /></button>
           </div>
         )}
         <form onSubmit={(e) => { e.preventDefault(); send(text); }} className="flex items-center gap-2">
           <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Ask about products, sizes, delivery…" aria-label="Message Mylo" maxLength={800}
-            className="min-h-[46px] flex-1 rounded-full border border-line bg-surface-alt px-4 text-[15px] text-ink outline-none placeholder:text-muted focus:border-plum" />
+            className="min-h-[46px] flex-1 rounded-full border border-[#EEE7EB] bg-[#F5F2F4] px-4 text-[15px] text-ink outline-none placeholder:text-muted focus:border-plum/40 focus:bg-white" />
           <button type="submit" disabled={!text.trim() || busy} aria-label="Send"
             className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full bg-plum text-white disabled:bg-[#DEDEDE] disabled:text-[#9A9A9A]">
-            <SendIcon className="h-5 w-5" />
+            <ArrowUp className="h-5 w-5" strokeWidth={2.5} />
           </button>
         </form>
       </div>
@@ -171,7 +183,7 @@ function CardView({ c, onSignin, onNavigate }: { c: Card; onSignin: () => void; 
         <div className="-mx-4 overflow-x-auto px-4">
           <div className="grid min-w-max auto-cols-[150px] grid-flow-col gap-2">
             {c.items.map((p) => (
-              <div key={p.handle} className="flex flex-col rounded-card border border-line bg-white p-2.5 shadow-card">
+              <div key={p.handle} className="flex flex-col rounded-2xl border border-[#EEE7EB] bg-white p-2.5">
                 <ProductImage p={p} className="aspect-square w-full" sizes="150px" />
                 <Link href={`/p/${p.handle}`} onClick={onNavigate} className="mt-2 line-clamp-2 text-[12.5px] font-semibold leading-tight text-ink">{p.title}</Link>
                 <div className="mt-1"><Price p={p} /></div>
@@ -187,14 +199,14 @@ function CardView({ c, onSignin, onNavigate }: { c: Card; onSignin: () => void; 
       if (!cart.length) return null;
       const fee = subtotal < delivery.free_min ? delivery.fee : 0;
       return (
-        <div className="rounded-card border border-line bg-white p-4 shadow-card">
+        <div className="rounded-2xl border border-[#EEE7EB] bg-white p-4">
           <p className="text-[14px] font-bold text-ink">{c.type === 'checkout' ? 'Ready to check out' : 'Your cart'}</p>
           <ul className="mt-2 space-y-1 text-[13px] text-body">
             {cart.map((l) => <li key={l.handle} className="flex justify-between gap-3"><span className="truncate">{l.qty} × {l.product.title}</span><span className="shrink-0 font-semibold">{inr(l.qty * l.product.price)}</span></li>)}
           </ul>
           <div className="mt-2 flex justify-between border-t border-line pt-2 text-[13px]"><span className="text-muted">Delivery</span><span>{fee ? inr(fee) : 'FREE'}</span></div>
           <div className="flex justify-between text-[15px] font-bold text-ink"><span>Total</span><span>{inr(subtotal + fee)}</span></div>
-          <Link href={c.type === 'checkout' ? '/checkout' : '/cart'} onClick={onNavigate} className="mt-3 flex min-h-[46px] items-center justify-center rounded-full bg-butter text-[15px] font-bold text-ink">{c.type === 'checkout' ? 'Proceed to Buy' : 'Go to Cart'}</Link>
+          <Link href={c.type === 'checkout' ? '/checkout' : '/cart'} onClick={onNavigate} className="mt-3 flex min-h-[46px] items-center justify-center rounded-full bg-plum text-[15px] font-semibold text-white">{c.type === 'checkout' ? 'Proceed to Buy' : 'Go to Cart'}</Link>
         </div>
       );
     }
@@ -203,7 +215,7 @@ function CardView({ c, onSignin, onNavigate }: { c: Card; onSignin: () => void; 
     case 'signin':
       return <button type="button" onClick={onSignin} className="flex min-h-[46px] w-full items-center justify-center rounded-full bg-plum text-[14px] font-bold text-white">Sign in with your phone</button>;
     case 'whatsapp':
-      return <a href={c.url} target="_blank" rel="noreferrer" className="flex min-h-[46px] items-center justify-center rounded-full bg-success text-[14px] font-bold text-white">💬 {c.label}</a>;
+      return <a href={c.url} target="_blank" rel="noreferrer" className="flex min-h-[46px] items-center justify-center rounded-full bg-success text-[14px] font-semibold text-white gap-2"><MessageCircle className="h-4 w-4" />{c.label}</a>;
   }
   return null;
 }

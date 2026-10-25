@@ -1,6 +1,8 @@
 'use client';
+import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowRight, ChevronRight, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Header from '@/components/shop/Header';
 import { useShop } from '@/components/shop/ShopProvider';
@@ -8,30 +10,14 @@ import { useMylo } from '@/components/shop/MyloChat';
 import { ProductImage, ProductTile } from '@/components/shop/Product';
 import { CATEGORIES, PRODUCT_COLS, Product, inr, shopFn, toProduct } from '@/lib/shop';
 import { Skeleton } from '@/components/design';
-import { PawIcon } from '@/components/design/nav-icons';
+import { CONCERNS, TRUST, catIcon, photo } from '@/components/shop/ui';
 
-// Amazon.in-style storefront: banners, concern cards, buy again, deals rows, categories. Mylo lives in the search bar.
-const CONCERNS = [
-  { title: 'Skin & coat troubles', tiles: [
-    { e: '😣', l: 'Itching', k: 'my dog keeps itching and scratching' },
-    { e: '❄️', l: 'Dandruff', k: 'anti dandruff shampoo for dogs' },
-    { e: '🍂', l: 'Shedding', k: 'heavy shedding dull coat supplement' },
-    { e: '👃', l: 'Bad smell', k: 'my dog smells even after a bath' },
-  ] },
-  { title: 'Everyday health', tiles: [
-    { e: '🦴', l: 'Joints', k: 'joint supplement for older dog' },
-    { e: '🍽️', l: 'Gut health', k: 'probiotic for upset tummy' },
-    { e: '👂', l: 'Ear care', k: 'ear cleaner for dogs with smelly ears' },
-    { e: '🦷', l: 'Dental', k: 'dental care for bad breath' },
-  ] },
-];
-
+// Storefront: photo banners, concern tiles, Mylo card, product rails, category grid. Mylo also lives in the search bar.
 export default function Home() {
   const { session, pet, delivery, nextRun } = useShop();
   const { openMylo } = useMylo();
   const [all, setAll] = useState<Product[] | null>(null);
   const [again, setAgain] = useState<{ p: Product; due: boolean }[]>([]);
-  const [slide, setSlide] = useState(0);
 
   useEffect(() => {
     supabase.from('shop_products').select(PRODUCT_COLS).eq('available', true).eq('in_stock', true).limit(400)
@@ -50,8 +36,6 @@ export default function Home() {
     }).catch(() => {});
   }, [session]);
 
-  useEffect(() => { const t = setInterval(() => setSlide((s) => (s + 1) % 3), 5000); return () => clearInterval(t); }, []);
-
   const otc = all?.filter((p) => !p.rx) ?? null;
   const deals = otc ? [...otc].sort((a, b) => b.save_pct - a.save_pct).slice(0, 12) : null;
   const sp = pet?.species === 'cat' ? /\b(cats?|feline|kitten)\b/i : pet?.species === 'dog' ? /\b(dogs?|canine|puppy)\b/i : null;
@@ -60,125 +44,176 @@ export default function Home() {
   const catThumb = (name: string) => all?.find((p) => p.category === name);
 
   const banners = [
-    { bg: 'from-plum to-plum-dark', t: 'Tick & flea season', s: 'Sprays, washes, spot-ons and collars', cta: 'Shop now', href: '/s?c=Antiparasitic', e: '🪲' },
-    { bg: 'from-plum-dark to-plum', t: 'Not sure what to buy?', s: 'Type the problem in the search bar. Mylo picks for you.', cta: 'Ask Mylo', href: '', e: '🐾' },
-    { bg: 'from-plum to-plum-dark', t: `Free delivery over ${inr(delivery.free_min)}`, s: `Evening run ${nextRun || ''} · free pickup in HSR Layout`, cta: 'See deals', href: '/s?k=deals&sort=save', e: '🚚' },
+    { img: 'Dog walking shot.jpeg', kicker: 'Tick & flea season', t: 'Walk worry-free', s: 'Spot-ons, sprays, washes and collars', cta: 'Shop protection', href: '/s?c=Antiparasitic' },
+    { img: 'Pawfamily_Cute.jpeg', kicker: 'Mylo, your pet shopper', t: 'Not sure what to buy?', s: 'Describe the problem. Mylo picks what fits.', cta: 'Ask Mylo', href: '' },
+    { img: 'A dog and a cat sleeping close to each other.jpeg', kicker: `Free delivery over ${inr(delivery.free_min)}`, t: 'Evening delivery', s: `Next run ${nextRun || 'this evening'} · or pick up free in HSR`, cta: 'See deals', href: '/s?k=deals&sort=save' },
   ];
 
   return (
-    <div className="mx-auto min-h-screen max-w-[480px] bg-surface-alt pb-28">
+    <div className="mx-auto min-h-screen max-w-[480px] bg-[#FAF8F9] pb-28">
       <Header />
 
-      {/* Banner carousel */}
-      <div className="relative overflow-hidden">
-        <div className="flex transition-transform duration-500" style={{ transform: `translateX(-${slide * 100}%)` }}>
-          {banners.map((b) => {
-            const inner = (
-              <div className={`flex h-[168px] w-full shrink-0 items-center justify-between bg-gradient-to-br ${b.bg} px-5 text-white`}>
-                <div className="max-w-[70%]">
-                  <p className="text-[22px] font-extrabold leading-tight">{b.t}</p>
-                  <p className="mt-1 text-[13px] text-white/85">{b.s}</p>
-                  <span className="mt-3 inline-block rounded-full bg-butter px-4 py-1.5 text-[13px] font-bold text-ink">{b.cta}</span>
-                </div>
-                <span className="text-[64px]" aria-hidden>{b.e}</span>
-              </div>
-            );
-            return b.href
-              ? <Link key={b.t} href={b.href} className="w-full shrink-0">{inner}</Link>
-              : <button key={b.t} type="button" onClick={() => openMylo()} className="w-full shrink-0 text-left">{inner}</button>;
-          })}
-        </div>
-        <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1.5">
-          {banners.map((_, i) => <button key={i} type="button" aria-label={`Banner ${i + 1}`} onClick={() => setSlide(i)} className={`h-1.5 rounded-full ${i === slide ? 'w-5 bg-white' : 'w-1.5 bg-white/50'}`} />)}
-        </div>
+      <Carousel banners={banners} onMylo={() => openMylo()} />
+
+      {/* Trust strip */}
+      <div className="mt-3 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+        {TRUST.map(({ l, Icon }) => (
+          <span key={l} className="flex shrink-0 items-center gap-1.5 rounded-full border border-[#EEE7EB] bg-white px-3 py-1.5 text-[11.5px] font-medium text-body">
+            <Icon className="h-3.5 w-3.5 text-success" />{l}
+          </span>
+        ))}
       </div>
 
-      <div className="-mt-3 space-y-3 px-3">
-        {/* Concern cards (Amazon 2x2 cards) */}
-        <div className="grid grid-cols-2 gap-3">
-          {CONCERNS.map((c) => (
-            <section key={c.title} className="rounded-[10px] bg-white p-3 shadow-card">
-              <h2 className="text-[15px] font-bold leading-tight text-ink">{c.title}</h2>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {c.tiles.map((t) => (
-                  <Link key={t.l} href={`/s?k=${encodeURIComponent(t.k)}`} className="block text-center">
-                    <span className="flex aspect-square items-center justify-center rounded-[8px] bg-plum-soft text-[28px]" aria-hidden>{t.e}</span>
-                    <span className="mt-1 block text-[11.5px] text-body">{t.l}</span>
-                  </Link>
-                ))}
-              </div>
-              <Link href={`/s?k=${encodeURIComponent(c.tiles[0].k)}`} className="mt-2 block text-[12px] font-semibold text-plum">See more</Link>
-            </section>
+      {/* Concerns */}
+      <Section title="What’s bothering your pet?" sub="Tap one. Mylo shows what helps.">
+        <div className="grid grid-cols-4 gap-x-2 gap-y-4 px-4">
+          {CONCERNS.map(({ l, k, Icon, tint, fg }) => (
+            <Link key={l} href={`/s?k=${encodeURIComponent(k)}`} className="flex flex-col items-center gap-1.5 text-center active:scale-95">
+              <span className="flex aspect-square w-full max-w-[68px] items-center justify-center rounded-[20px]" style={{ background: tint, color: fg }}>
+                <Icon className="h-7 w-7" strokeWidth={1.8} />
+              </span>
+              <span className="text-[11.5px] font-medium leading-tight text-ink">{l}</span>
+            </Link>
           ))}
         </div>
+      </Section>
 
-        {/* Ask Mylo strip */}
-        <button type="button" onClick={() => openMylo()} className="flex w-full items-center gap-3 rounded-[10px] bg-white p-3 text-left shadow-card">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-plum text-white"><PawIcon className="h-6 w-6" /></span>
-          <span className="min-w-0 flex-1"><span className="block text-[14px] font-bold text-ink">Ask Mylo, your shopping assistant</span><span className="block text-[12px] text-muted">“Which tick medicine for a 20 kg Lab?” · “Compare these shampoos”</span></span>
-          <span className="text-plum">›</span>
+      {/* Ask Mylo card */}
+      <div className="mx-4 mt-6 overflow-hidden rounded-3xl bg-gradient-to-br from-plum via-[#7E2456] to-[#4E1335] p-4 text-white">
+        <div className="flex items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10"><Sparkles className="h-5 w-5 text-butter" /></span>
+          <div>
+            <p className="text-[15px] font-semibold leading-tight">Ask Mylo</p>
+            <p className="text-[12px] text-white/70">Your pet-care shopping assistant</p>
+          </div>
+        </div>
+        <div className="mt-3 flex flex-col gap-2">
+          {[`Which tick medicine for a ${pet?.weight_kg ? `${pet.weight_kg} kg` : '20 kg'} ${pet?.species === 'cat' ? 'cat' : 'dog'}?`, 'Compare the best anti-itch shampoos'].map((q) => (
+            <Link key={q} href={`/s?k=${encodeURIComponent(q)}`} className="flex items-center justify-between gap-2 rounded-2xl bg-white/10 px-3.5 py-2.5 text-[13px] ring-1 ring-white/10 active:bg-white/20">
+              <span>“{q}”</span><ArrowRight className="h-4 w-4 shrink-0 opacity-70" />
+            </Link>
+          ))}
+        </div>
+        <button type="button" onClick={() => openMylo()} className="mt-3 flex h-11 w-full items-center justify-center gap-1.5 rounded-full bg-butter text-[14px] font-semibold text-ink">
+          Chat with Mylo
         </button>
+      </div>
 
-        {again.length > 0 && (
-          <Row title="Buy it again" href="/orders">
-            {again.map(({ p, due }) => (
-              <div key={p.handle} className="relative w-[150px] shrink-0">
-                {due && <span className="absolute left-2 top-2 z-10 rounded bg-butter px-1.5 py-0.5 text-[10px] font-bold text-ink">Due for refill</span>}
-                <ProductTile p={p} />
+      {again.length > 0 && (
+        <Rail title="Buy it again" href="/orders">
+          {again.map(({ p, due }) => <div key={p.handle} className="w-[138px] shrink-0 snap-start"><ProductTile p={p} tag={due ? 'Due for refill' : undefined} /></div>)}
+        </Rail>
+      )}
+
+      <Rail title="Today’s deals" href="/s?k=deals&sort=save" items={deals} />
+
+      {/* Categories */}
+      <Section title="Shop by category" href="/categories">
+        <div className="grid grid-cols-3 gap-2.5 px-4">
+          {CATEGORIES.slice(0, 9).map((c) => {
+            const t = catThumb(c.name);
+            const ic = catIcon(c.name);
+            return (
+              <Link key={c.name} href={`/s?c=${encodeURIComponent(c.name)}`} className="overflow-hidden rounded-2xl border border-[#EEE7EB] bg-white active:scale-[0.98]">
+                <div className="relative aspect-[5/4]" style={{ background: ic.tint }}>
+                  {t ? <div className="absolute inset-1.5"><ProductImage p={t} className="h-full w-full !bg-transparent" sizes="120px" /></div>
+                    : <span className="absolute inset-0 flex items-center justify-center" style={{ color: ic.fg }}><ic.Icon className="h-8 w-8" /></span>}
+                </div>
+                <p className="line-clamp-2 min-h-[38px] px-2 py-1.5 text-[11.5px] font-medium leading-tight text-ink">{c.name}</p>
+              </Link>
+            );
+          })}
+        </div>
+      </Section>
+
+      <Rail title={pet ? `Picked for ${pet.name}` : 'Supplements & vitamins'} href={pet ? `/s?k=${encodeURIComponent(`${pet.species} care`)}` : '/s?c=Supplements%20%26%20Vitamins'} items={forPet} />
+      <Rail title="Tick & flea protection" href="/s?c=Antiparasitic" items={ticks} />
+
+      <p className="px-4 pt-8 text-center text-[11.5px] leading-[1.7] text-muted">
+        <Link href="/terms" className="underline">Conditions of use</Link> · <Link href="/privacy" className="underline">Privacy</Link> · <Link href="/cancellation" className="underline">Cancellations & refunds</Link><br />© Mylopaws (Prescom Technologies), Bengaluru
+      </p>
+    </div>
+  );
+}
+
+type Banner = { img: string; kicker: string; t: string; s: string; cta: string; href: string };
+
+/** Swipeable photo banners with a peek of the next card and progress dots. */
+function Carousel({ banners, onMylo }: { banners: Banner[]; onMylo: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [i, setI] = useState(0);
+  const paused = useRef(false);
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      const el = ref.current;
+      if (!el || paused.current) return;
+      const next = (i + 1) % banners.length;
+      el.scrollTo({ left: (el.children[next] as HTMLElement).offsetLeft - 16, behavior: 'smooth' });
+    }, 5000);
+    return () => clearInterval(t);
+  }, [i, banners.length]);
+
+  const onScroll = () => {
+    const el = ref.current;
+    if (!el) return;
+    const w = (el.children[0] as HTMLElement).offsetWidth + 10;
+    setI(Math.round(el.scrollLeft / w));
+  };
+
+  return (
+    <div className="mt-4">
+      <div ref={ref} onScroll={onScroll} onTouchStart={() => { paused.current = true; }}
+        className="flex snap-x snap-mandatory gap-2.5 overflow-x-auto scroll-px-4 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {banners.map((b, n) => {
+          const inner = (
+            <div className="relative h-[184px] w-full overflow-hidden rounded-3xl bg-plum-dark">
+              <Image src={photo(b.img)} alt="" fill sizes="(max-width: 480px) 90vw, 430px" priority={n === 0} className="object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#3A0E27]/90 via-[#3A0E27]/55 to-transparent" />
+              <div className="relative flex h-full max-w-[72%] flex-col justify-end p-4 text-white">
+                <span className="mb-1.5 w-fit rounded-full bg-white/15 px-2.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-butter backdrop-blur">{b.kicker}</span>
+                <p className="text-[21px] font-bold leading-tight tracking-tight">{b.t}</p>
+                <p className="mt-0.5 text-[12.5px] leading-snug text-white/85">{b.s}</p>
+                <span className="mt-2.5 inline-flex w-fit items-center gap-1 rounded-full bg-butter px-3.5 py-1.5 text-[12.5px] font-semibold text-ink">{b.cta}<ChevronRight className="h-3.5 w-3.5" /></span>
               </div>
-            ))}
-          </Row>
-        )}
-
-        <Row title="Today’s deals" href="/s?k=deals&sort=save" items={deals} />
-        <Row title={pet ? `Top picks for ${pet.name}` : 'Supplements & vitamins'} href={pet ? `/s?k=${encodeURIComponent(`${pet.species} care`)}` : '/s?c=Supplements%20%26%20Vitamins'} items={forPet} />
-        <Row title="Tick & flea protection" href="/s?c=Antiparasitic" items={ticks} />
-
-        <section className="rounded-[10px] bg-white p-3 shadow-card">
-          <h2 className="text-[17px] font-bold text-ink">Shop by category</h2>
-          <div className="mt-2 grid grid-cols-3 gap-2">
-            {CATEGORIES.slice(0, 9).map((c) => {
-              const t = catThumb(c.name);
-              return (
-                <Link key={c.name} href={`/s?c=${encodeURIComponent(c.name)}`} className="block text-center">
-                  {t ? <ProductImage p={t} className="aspect-square w-full" sizes="120px" /> : <span className="flex aspect-square items-center justify-center rounded-[14px] bg-surface-alt text-[30px]" aria-hidden>{c.emoji}</span>}
-                  <span className="mt-1 line-clamp-2 block text-[11.5px] leading-tight text-body">{c.name}</span>
-                </Link>
-              );
-            })}
-          </div>
-          <Link href="/categories" className="mt-2 block text-[13px] font-semibold text-plum">See all categories</Link>
-        </section>
-
-        <section className="rounded-[10px] bg-white p-4 text-center shadow-card">
-          <div className="grid grid-cols-3 gap-2 text-[11.5px] font-semibold text-ink">
-            <div><div className="text-[22px]" aria-hidden>✅</div>Genuine, from a licensed pet pharmacy</div>
-            <div><div className="text-[22px]" aria-hidden>🌆</div>Evening delivery across Bangalore</div>
-            <div><div className="text-[22px]" aria-hidden>↩️</div>Cancel before packing, full refund</div>
-          </div>
-        </section>
-
-        <p className="pt-2 text-center text-[12px] leading-[1.6] text-muted">
-          <Link href="/terms" className="underline">Conditions of use</Link> · <Link href="/privacy" className="underline">Privacy</Link> · <Link href="/cancellation" className="underline">Cancellations & refunds</Link><br />© Mylopaws (Prescom Technologies), Bengaluru
-        </p>
+            </div>
+          );
+          return b.href
+            ? <Link key={b.t} href={b.href} className="w-[90%] shrink-0 snap-start">{inner}</Link>
+            : <button key={b.t} type="button" onClick={onMylo} className="w-[90%] shrink-0 snap-start text-left">{inner}</button>;
+        })}
+      </div>
+      <div className="mt-2 flex justify-center gap-1.5">
+        {banners.map((_, n) => <span key={n} className={`h-1.5 rounded-full transition-all ${n === i ? 'w-5 bg-plum' : 'w-1.5 bg-[#D9CDD4]'}`} />)}
       </div>
     </div>
   );
 }
 
-function Row({ title, href, items, children }: { title: string; href: string; items?: Product[] | null; children?: React.ReactNode }) {
+function Section({ title, sub, href, children }: { title: string; sub?: string; href?: string; children: React.ReactNode }) {
+  return (
+    <section className="pt-6">
+      <div className="mb-3 flex items-end justify-between px-4">
+        <div>
+          <h2 className="text-[17px] font-bold tracking-tight text-ink">{title}</h2>
+          {sub && <p className="text-[12px] text-muted">{sub}</p>}
+        </div>
+        {href && <Link href={href} className="flex items-center text-[13px] font-semibold text-plum">See all<ChevronRight className="h-4 w-4" /></Link>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Rail({ title, href, items, children }: { title: string; href: string; items?: Product[] | null; children?: React.ReactNode }) {
   if (items && !items.length && !children) return null;
   return (
-    <section className="rounded-[10px] bg-white py-3 shadow-card">
-      <div className="flex items-baseline justify-between px-3">
-        <h2 className="text-[17px] font-bold text-ink">{title}</h2>
-        <Link href={href} className="text-[13px] font-semibold text-plum">See all</Link>
-      </div>
-      <div className="mt-2 flex gap-2.5 overflow-x-auto px-3 pb-1">
+    <Section title={title} href={href}>
+      <div className="flex snap-x gap-3 overflow-x-auto scroll-px-4 px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {children ?? (items
-          ? items.map((p) => <div key={p.handle} className="w-[150px] shrink-0"><ProductTile p={p} /></div>)
-          : Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-[290px] w-[150px] shrink-0 rounded-card" />))}
+          ? items.map((p) => <div key={p.handle} className="w-[138px] shrink-0 snap-start"><ProductTile p={p} /></div>)
+          : Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-[220px] w-[138px] shrink-0 rounded-2xl" />))}
       </div>
-    </section>
+    </Section>
   );
 }
