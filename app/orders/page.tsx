@@ -7,7 +7,8 @@ import { toast } from '@/lib/toast';
 import { track } from '@/lib/analytics';
 import { useShop } from '@/components/shop/ShopProvider';
 import PhoneAuthSheet from '@/components/PhoneAuthSheet';
-import { EmptyState, ErrorState, PageShell, PillButton, SkeletonList } from '@/components/design';
+import { EmptyState, ErrorState, PillButton, SkeletonList } from '@/components/design';
+import Header from '@/components/shop/Header';
 import { PRODUCT_COLS, ShopError, inr, shopFn, toProduct } from '@/lib/shop';
 
 type Order = {
@@ -69,15 +70,20 @@ export default function OrdersPage() {
 
   if (authReady && !session) {
     return (
-      <PageShell variant="plum" size="large" title="Orders">
+      <div className="mx-auto min-h-screen max-w-[480px] bg-surface-alt pb-28">
+        <Header categories={false} />
+        <h1 className="px-4 pt-4 text-[22px] font-bold text-ink">Your Orders</h1>
         <EmptyState emoji="📦" title="Sign in to see your orders" sub="Use the phone number you ordered with." action={{ label: 'Sign in', onClick: () => setAuthOpen(true) }} />
         <PhoneAuthSheet open={authOpen} onClose={() => setAuthOpen(false)} onVerified={() => setAuthOpen(false)} />
-      </PageShell>
+      </div>
     );
   }
 
   return (
-    <PageShell variant="plum" size="large" title="Orders" subtitle="Track, reorder or cancel">
+    <div className="mx-auto min-h-screen max-w-[480px] bg-surface-alt pb-28">
+      <Header categories={false} />
+      <h1 className="px-4 pt-4 text-[22px] font-bold text-ink">Your Orders</h1>
+      <div className="p-3">
       {err ? <ErrorState onRetry={load} /> : !orders ? <SkeletonList count={3} lines={3} /> : !orders.length ? (
         <EmptyState emoji="📦" title="No orders yet" sub="Your shop orders will show up here." action={{ label: 'Start shopping', onClick: () => router.push('/') }} />
       ) : (
@@ -115,7 +121,7 @@ export default function OrdersPage() {
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" onClick={() => buyAgain(o)} className="min-h-[40px] rounded-full bg-plum px-4 text-[13px] font-bold text-white">Buy again</button>
+                  <button type="button" onClick={() => buyAgain(o)} className="min-h-[40px] rounded-full bg-butter px-4 text-[13px] font-bold text-ink">Buy it again</button>
                   {o.tracking_url && <a href={o.tracking_url} target="_blank" rel="noreferrer" className="flex min-h-[40px] items-center rounded-full border-[1.5px] border-plum px-4 text-[13px] font-bold text-plum">Track</a>}
                   <a href={`https://wa.me/${support}?text=${encodeURIComponent(`Hi Mylopaws, about order #${o.order_number}`)}`} target="_blank" rel="noreferrer" className="flex min-h-[40px] items-center rounded-full border border-line px-4 text-[13px] font-semibold text-body">Help</a>
                   {o.can_cancel && confirming !== o.id && <button type="button" onClick={() => setConfirming(o.id)} className="min-h-[40px] px-2 text-[13px] font-semibold text-danger">Cancel</button>}
@@ -135,6 +141,7 @@ export default function OrdersPage() {
           <p className="pt-2 text-center text-[12px] text-muted">Looking for Travel or Dermacare bookings? <Link href="/bookings" className="underline">See past bookings</Link></p>
         </div>
       )}
-    </PageShell>
+      </div>
+    </div>
   );
 }

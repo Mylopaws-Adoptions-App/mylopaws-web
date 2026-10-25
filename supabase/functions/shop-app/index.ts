@@ -13,6 +13,8 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
  *    rx_upload   login    stores a prescription (photo/PDF) in the private 'prescriptions' bucket
  *    orders      login    the customer's orders (matched on phone)
  *    cancel      login    cancel before packing; paid orders are auto-refunded when app_config.auto_refund_on_cancel
+ *    search_answer public  Mylo's short answer + top picks for a search-bar query
+ *    ops_list / ops_rx / ops_command   staff only: all shop orders, prescription links, status updates (via logistics-bot)
  *  verify_jwt is OFF; the user's Supabase JWT is checked here for login actions.
  *  Env: OPENROUTER_API_KEY, RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET (shared with the other shop functions).
  */
@@ -373,6 +375,58 @@ async function runTool(name: string, a: Row, st: { cart: CartLine[]; cards: Card
   return { result: { error: 'unknown tool' } };
 }
 
+// ── search-bar answer: Mylo reads a search query and picks the best few products (no cart changes) ──
+const SEARCH_SYSTEM = `You are Mylo, the shopping assistant built into the Mylopaws search bar (pet medicines and care products, Bangalore).
+The customer typed a search. Call search_products (once or twice), then call show_products with the 2 to 4 best in-stock handles, best first.
+Then write ONE or TWO short sentences (max 45 words) that answer their need and say why these fit. No rupee amounts, no markdown.
+Never diagnose or give doses; if it sounds serious, add "please see a vet". Never suggest prescription items (rx=true) unless they named that medicine. Never suggest vaccines.
+If nothing fits, say so in one sentence and do not call show_products.`;
+
+// deno-lint-ignore no-explicit-any
+async function searchAnswer(body: Row, c: any) {
+  const q = String(body.q ?? '').trim().slice(0, 200);
+  if (q.length < 3) return { status: 400, data: { error: 'query too short' } };
+  const apiKey = Deno.env.get('OPENROUTER_API_KEY');
+  if (!apiKey) return { status: 500, data: { error: 'assistant unavailable' } };
+  const pet = body.pet && typeof body.pet === 'object' ? body.pet as Row : null;
+  let sys = SEARCH_SYSTEM;
+  if (pet?.name) sys += `\nPET: ${String(pet.name).slice(0, 40)}${pet.species ? `, ${String(pet.species).slice(0, 10)}` : ''}${pet.weight_kg ? `, ${Number(pet.weight_kg)} kg` : ''}. Pick sizes that suit it.`;
+  const messages: Msg[] = [{ role: 'system', content: sys }, { role: 'user', content: q }];
+  const cards: Card[] = []; const seen = new Map<string, Row>();
+  const tools = TOOLS.filter((t) => ['search_products', 'show_products'].includes(t.function.name));
+  let text = '';
+  for (let step = 0; step < 4; step++) {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST', signal: AbortSignal.timeout(30000),
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://www.mylopaws.app', 'X-Title': 'Mylopaws Shop search' },
+      body: JSON.stringify({ model: c.model, messages, tools, tool_choice: 'auto', max_tokens: 400, temperature: 0.2 }),
+    });
+    const j = await res.json().catch(() => ({}));
+    const m = j.choices?.[0]?.message;
+    if (!res.ok || !m) break;
+    const calls = Array.isArray(m.tool_calls) ? m.tool_calls : [];
+    if (!calls.length) { text = String(m.content ?? '').trim(); break; }
+    messages.push({ role: 'assistant', content: m.content ?? null, tool_calls: calls });
+    for (const tc of calls) {
+      let args: Row = {};
+      try { args = JSON.parse(tc.function?.arguments || '{}'); } catch { /* empty */ }
+      const out = await runTool(String(tc.function?.name), args, { cart: [], cards, cartOps: [], seen, user: null, c, contactId: 'app:search' });
+      messages.push({ role: 'tool', tool_call_id: tc.id, name: tc.function?.name, content: JSON.stringify(out.result).slice(0, 6000) });
+    }
+  }
+  const picks = cards.find((x) => x.type === 'products')?.items ?? [];
+  await swallow(db.from('shop_events').insert({ contact_id: 'app:search', channel: 'app', event: 'search_answer', detail: { q: q.slice(0, 100), picks: picks.length } }));
+  return { status: 200, data: { text: text.replace(/\*\*(.+?)\*\*/g, '$1').slice(0, 600), picks } };
+}
+
+// ── ops board (staff only) ──
+async function staffFrom(user: { id: string } | null) {
+  if (!user) return null;
+  const { data } = await db.from('staff').select('id, name, role').eq('auth_user_id', user.id).eq('active', true).maybeSingle();
+  return data;
+}
+const OPS_COLS = 'id, order_number, created_at, paid_at, customer_name, customer_phone, items, subtotal, delivery_fee, total, status, payment_status, delivery_status, fulfilment, shipping_address, pincode, channel, promised_date, tracking_url, rx_status, prescription_id, logistics_alerted_at, logistics_acked_at, logistics_issue, shipped_at, delivered_at';
+
 async function myOrders(phone: string, limit = 20) {
   if (!/^\d{10}$/.test(phone)) return [];
   const { data } = await db.from('shop_orders')
@@ -424,6 +478,51 @@ Deno.serve(async (req) => {
     if (action === 'quote') {
       const priced = await priceCart(cleanCart(body.items), c);
       return json(priced);
+    }
+
+    if (action === 'search_answer') {
+      const r = await searchAnswer(body, c);
+      return json(r.data, r.status);
+    }
+
+    if (action === 'ops_list' || action === 'ops_command' || action === 'ops_rx') {
+      const st = await staffFrom(user);
+      if (!st) return json({ error: 'Staff only' }, 403);
+      if (action === 'ops_list') {
+        const days = Math.max(1, Math.min(90, Number(body.days ?? 30)));
+        const { data, error } = await db.from('shop_orders').select(OPS_COLS)
+          .gte('created_at', new Date(Date.now() - days * 86400000).toISOString())
+          .neq('status', 'test').order('created_at', { ascending: false }).limit(300);
+        if (error) throw error;
+        return json({ orders: data ?? [], me: st.name });
+      }
+      if (action === 'ops_rx') {
+        const id = String(body.order_id ?? '');
+        if (!UUID.test(id)) return json({ error: 'bad order' }, 400);
+        const { data: o } = await db.from('shop_orders').select('prescription_id').eq('id', id).maybeSingle();
+        if (!o?.prescription_id) return json({ files: [] });
+        const { data: rx } = await db.from('shop_prescriptions').select('files, status, note').eq('id', o.prescription_id).maybeSingle();
+        const files: { url: string; type: string }[] = [];
+        for (const f of ((rx?.files ?? []) as { path: string; type?: string }[]).slice(0, 6)) {
+          const { data: s2 } = await db.storage.from(RX_BUCKET).createSignedUrl(f.path, 3600);
+          if (s2?.signedUrl) files.push({ url: s2.signedUrl, type: f.type ?? '' });
+        }
+        return json({ files, status: rx?.status ?? null, note: rx?.note ?? null });
+      }
+      // ops_command: same commands the logistics team sends on WhatsApp, run by the logistics bot (customer gets told)
+      const num = Math.floor(Number(body.order_number));
+      const cmd = String(body.command ?? '').trim().toLowerCase();
+      const ok = /^(ok|packed|out|delivered|rx ok|rx bad( .{0,200})?|eta [a-z0-9\/\- ]{1,20}|shipped( \S{1,300})?|issue .{1,300}|cancel( .{0,300})?)$/.test(cmd);
+      if (!(num > 0) || !ok) return json({ error: 'bad command' }, 400);
+      const secret = String((await db.from('app_config').select('value').eq('key', 'ops_alert_secret').maybeSingle()).data?.value ?? '');
+      const r = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/logistics-bot`, {
+        method: 'POST', signal: AbortSignal.timeout(25000),
+        headers: { 'Content-Type': 'application/json', 'x-alert-secret': secret },
+        body: JSON.stringify({ event: 'ops_command', actor: st.name, body: `${num} ${String(body.command ?? '').trim()}` }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) return json({ error: j.error ?? 'Update failed' }, 502);
+      return json({ reply: j.reply ?? 'Done' });
     }
 
     if (action === 'rx_upload') {

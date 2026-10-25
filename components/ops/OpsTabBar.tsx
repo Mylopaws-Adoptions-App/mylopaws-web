@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { CarIcon, SparkleIcon, CatIcon, MoreIcon, MicIcon, TeamIcon, MegaphoneIcon } from '@/components/design/nav-icons';
+import { CarIcon, SparkleIcon, CatIcon, MoreIcon, MicIcon, TeamIcon, MegaphoneIcon, BagIcon } from '@/components/design/nav-icons';
 import { Sheet } from '@/components/design';
 
 /**
@@ -23,6 +23,7 @@ export const OPS_NAV_OFFSET = 'calc(56px + env(safe-area-inset-bottom))';
 type Item = { href: string; label: string; Icon: (p: any) => JSX.Element };
 
 const PRIMARY_SUPPLIER: Item[] = [
+  { href: '/ops/shop', label: 'Shop', Icon: BagIcon },
   { href: '/ops/board/travel', label: 'Travel', Icon: CarIcon },
   { href: '/ops/board/dermacare', label: 'Dermacare', Icon: SparkleIcon },
 ];

@@ -5,7 +5,7 @@ import { mediaFor } from '@/lib/media';
 import TabBar from '@/components/TabBar';
 import AnalyticsClickTracker from '@/components/AnalyticsClickTracker';
 import ShopProvider from '@/components/shop/ShopProvider';
-import CartBar from '@/components/shop/CartBar';
+import { MyloProvider } from '@/components/shop/MyloChat';
 
 const LOGO = mediaFor('brandLogo');
 // GA4 Measurement ID. Public (non-secret) value, so a literal default keeps analytics working in
@@ -53,9 +53,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       */}
       <body className="font-sans text-ink antialiased pb-16 sm:pb-0">
         <ShopProvider>
-          {children}
-          <CartBar />
-          <TabBar />
+          <MyloProvider>
+            {children}
+            <TabBar />
+          </MyloProvider>
         </ShopProvider>
         {/* GA4: enhanced measurement (page_view on SPA route changes, scroll, outbound, forms,
             downloads) + AnalyticsClickTracker for a custom `interaction` event on every click. */}

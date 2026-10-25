@@ -17,12 +17,16 @@ export function ProductImage({ p, className = '', sizes = '160px', priority }: {
   );
 }
 
+/** Amazon-style price block: −23% ₹1,701 · M.R.P. ₹2,200 (struck). */
 export function Price({ p, size = 'md' }: { p: Product; size?: 'md' | 'lg' }) {
+  const lg = size === 'lg';
   return (
-    <div className="flex flex-wrap items-baseline gap-x-1.5">
-      <span className={`${size === 'lg' ? 'text-[26px]' : 'text-[15px]'} font-extrabold text-ink`}>{inr(p.price)}</span>
-      {p.mrp > p.price && <span className={`${size === 'lg' ? 'text-[15px]' : 'text-[12px]'} text-muted line-through`}>{inr(p.mrp)}</span>}
-      {p.save_pct > 0 && <span className={`${size === 'lg' ? 'text-[14px]' : 'text-[11px]'} font-bold text-success`}>{p.save_pct}% off</span>}
+    <div>
+      <div className="flex flex-wrap items-baseline gap-x-1.5">
+        {p.save_pct > 0 && <span className={`${lg ? 'text-[24px] font-light' : 'text-[13px] font-semibold'} text-danger`}>-{p.save_pct}%</span>}
+        <span className={`${lg ? 'text-[28px]' : 'text-[17px]'} font-bold text-ink`}><span className={`${lg ? 'text-[15px]' : 'text-[11px]'} align-top`}>₹</span>{Math.round(p.price).toLocaleString('en-IN')}</span>
+      </div>
+      {p.mrp > p.price && <p className={`${lg ? 'text-[13px]' : 'text-[11px]'} text-muted`}>M.R.P.: <span className="line-through">{inr(p.mrp)}</span></p>}
     </div>
   );
 }
@@ -57,13 +61,13 @@ export function AddControl({ p, full }: { p: Product; full?: boolean }) {
   if (q === 0) {
     return (
       <button type="button" onClick={() => setQty(p, 1)} aria-label={`Add ${p.title}`}
-        className={`inline-flex h-10 items-center justify-center rounded-full bg-plum px-5 text-[14px] font-bold text-white transition active:scale-95 ${w}`}>
-        Add
+        className={`inline-flex h-10 items-center justify-center rounded-full bg-butter px-5 text-[14px] font-bold text-ink transition active:scale-95 ${w}`}>
+        Add to cart
       </button>
     );
   }
   return (
-    <div className={`inline-flex h-10 items-center justify-between rounded-full bg-plum text-white ${full ? 'w-full' : 'min-w-[104px]'}`}>
+    <div className={`inline-flex h-10 items-center justify-between rounded-full border-2 border-butter bg-white text-ink ${full ? 'w-full' : 'min-w-[104px]'}`}>
       <button type="button" onClick={() => setQty(p, q - 1)} aria-label="One less" className="h-10 w-10 text-[20px] font-bold">−</button>
       <span className="text-[15px] font-bold" aria-live="polite">{q}</span>
       <button type="button" onClick={() => setQty(p, q + 1)} aria-label="One more" className="h-10 w-10 text-[20px] font-bold">+</button>
@@ -97,6 +101,33 @@ export function ProductRow({ p, children }: { p: Product; children?: React.React
         <div className="mt-1"><Badges p={p} /></div>
       </div>
       <div className="shrink-0">{children ?? <AddControl p={p} />}</div>
+    </div>
+  );
+}
+
+/** "FREE delivery Mon, 26 Oct" line, Amazon style. */
+export function DeliveryLine({ p }: { p: Product }) {
+  const { delivery, nextRun } = useShop();
+  if (!p.in_stock || p.vaccine) return null;
+  const when = nextRun || 'on the next run';
+  return p.price >= delivery.free_min
+    ? <p className="text-[12px] text-body"><b>FREE delivery</b> {when}</p>
+    : <p className="text-[12px] text-body">Delivery <b>{when}</b> · FREE over {inr(delivery.free_min)}</p>;
+}
+
+/** Search/listing result row: image left, details right (Amazon mobile list). */
+export function ResultRow({ p, priority }: { p: Product; priority?: boolean }) {
+  return (
+    <div className="flex gap-3 border-b border-line bg-white py-3">
+      <Link href={`/p/${p.handle}`} className="w-[38%] shrink-0"><ProductImage p={p} className="aspect-square w-full" sizes="180px" priority={priority} /></Link>
+      <div className="min-w-0 flex-1">
+        <Link href={`/p/${p.handle}`} className="line-clamp-3 text-[14px] leading-[1.35] text-ink">{p.title}</Link>
+        <div className="mt-1"><Badges p={p} /></div>
+        <div className="mt-1"><Price p={p} /></div>
+        <div className="mt-1"><DeliveryLine p={p} /></div>
+        {p.in_stock && !p.vaccine && <p className="text-[12px] font-semibold text-success">In stock</p>}
+        <div className="mt-2"><AddControl p={p} /></div>
+      </div>
     </div>
   );
 }

@@ -30,7 +30,7 @@ export default function OpsLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (ready && !session && !isLogin) router.replace('/ops/login');
-    if (ready && session && isLogin) router.replace('/ops/board/travel');
+    if (ready && session && isLogin) router.replace('/ops/shop');
   }, [ready, session, isLogin, router]);
 
   if (isLogin) return <>{children}</>;
