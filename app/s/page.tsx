@@ -43,7 +43,7 @@ function Results() {
         rows = data ?? [];
         if (!rows.length) {
           const w = k.replace(/[%_,()?]/g, ' ').split(/\s+/).filter((x) => x.length > 2).slice(0, 4);
-          if (w.length) rows = (await supabase.from('shop_products').select(PRODUCT_COLS).or(w.map((x) => `title.ilike.%${x}%`).join(',')).limit(60)).data ?? [];
+          if (w.length) rows = (await supabase.from('shop_products').select(PRODUCT_COLS).eq('available', true).or(w.map((x) => `title.ilike.%${x}%`).join(',')).limit(60)).data ?? [];
         }
       } else {
         let qb = supabase.from('shop_products').select(PRODUCT_COLS).eq('available', true).limit(400);

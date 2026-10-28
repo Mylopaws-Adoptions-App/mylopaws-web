@@ -41,7 +41,7 @@ export default function Header({ categories = true, initial = '' }: { categories
     const id = setTimeout(async () => {
       const { data } = await supabase.rpc('search_products', { search_query: t, result_limit: 6 });
       let rows = data ?? [];
-      if (!rows.length) rows = (await supabase.from('shop_products').select(PRODUCT_COLS).ilike('title', `%${t.replace(/[%_,()]/g, ' ')}%`).limit(6)).data ?? [];
+      if (!rows.length) rows = (await supabase.from('shop_products').select(PRODUCT_COLS).eq('available', true).ilike('title', `%${t.replace(/[%_,()]/g, ' ')}%`).limit(6)).data ?? [];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setSugg((rows as any[]).map(toProduct));
     }, 200);
