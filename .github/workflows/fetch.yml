@@ -1,0 +1,29 @@
+name: fetch-poster-assets
+on:
+  push:
+    branches: [poster-assets]
+    paths: ['.github/workflows/fetch.yml']
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download
+        run: |
+          mkdir -p img
+          for f in anxocare-tablets-60-tablets.png bravecto-1000mg.jpg bravecto-500mg.jpg canitone-joint-support-30-tablets.png diarest-enzo-digestive-syrup-200-ml.jpg doody-off-tablets-anti-diarrhoeal-and-probiotic-10-tablets.jpg episoothe-shampoo.png erina-coat-cleanser-shampoo-200-ml.png fiprofort-plus-10-20kg.jpg frontline-plus-spot-on-cats-3-pipettes.png furfree-anti-tick-wash-100-ml.jpg furglow-oral-coat-conditioner-200-ml.png himalaya-healthy-treats-adult-chicken-400-g.png kiskin-lotion.png nexgard-spectra-chewable-dogs-15-30-kg-3-tablets.jpg pawpourri-cologne.png scavon-cream.png topicure-pet-wound-healing-spray-75-ml.png treat-o-clock-chicken-and-egg-treats-75-g.png treat-o-clock-strawberry-with-chicken-meat-treats-75-g.png whiskas-adult-dry-food-ocean-fish-3-kg.jpg; do
+            curl -fsSL "https://sbajixyhyyjpgkxrhltc.supabase.co/storage/v1/object/public/shop-images/$f" -o "img/$f"
+          done
+          curl -fsSL "https://sbajixyhyyjpgkxrhltc.supabase.co/storage/v1/object/public/Image%20Assets/Mylopaws%20Transparent%20Logo.png" -o img/logo.png
+          for p in "Dog%20walking%20shot.jpeg:walk.jpg" "Pawfamily_Cute.jpeg:family.jpg" "A%20dog%20and%20a%20cat%20sleeping%20close%20to%20each%20other.jpeg:sleep.jpg"; do
+            curl -fsSL "https://sbajixyhyyjpgkxrhltc.supabase.co/storage/v1/object/public/Image%20Assets/${p%%:*}" -o "img/raw-${p##*:}"
+            convert "img/raw-${p##*:}" -auto-orient -resize 1400x1400\> -quality 82 "img/${p##*:}"
+            rm "img/raw-${p##*:}"
+          done
+          ls -la img
+      - name: Commit
+        run: |
+          git config user.name "poster-bot"; git config user.email "bot@users.noreply.github.com"
+          git add img && git commit -m "Poster assets" && git push
