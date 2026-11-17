@@ -1,0 +1,31 @@
+# Deploys www.mylopaws.app on every push to main (and on demand).
+# Vercel's Git integration can't build a private organisation repo on the Hobby plan, so we deploy with the Vercel CLI.
+# Needs one repository secret: VERCEL_TOKEN (vercel.com/account/tokens). Org/project IDs below are not secret.
+name: Deploy to Vercel
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: vercel-production
+  cancel-in-progress: false
+env:
+  VERCEL_ORG_ID: team_Ofqi41CtsjCFKlWgN3QGTeYB
+  VERCEL_PROJECT_ID: prj_mJiAhgNMFMXf1ixr715Dev6A0irW
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Pull Vercel production settings and env
+        run: npx --yes vercel@latest pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Build
+        run: npx --yes vercel@latest build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      - name: Deploy
+        run: npx --yes vercel@latest deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
