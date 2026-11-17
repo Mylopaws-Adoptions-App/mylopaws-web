@@ -1,4 +1,5 @@
 'use client';
+import type React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
@@ -20,7 +21,7 @@ import { Sheet } from '@/components/design';
  */
 export const OPS_NAV_OFFSET = 'calc(56px + env(safe-area-inset-bottom))';
 
-type Item = { href: string; label: string; Icon: (p: any) => JSX.Element };
+type Item = { href: string; label: string; Icon: (p: any) => React.JSX.Element };
 
 const PRIMARY_SUPPLIER: Item[] = [
   { href: '/ops/shop', label: 'Shop', Icon: BagIcon },
